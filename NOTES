@@ -1,0 +1,12 @@
+sysfuzz is a program that attempts to perform fuzz testing of the FreeBSD
+kernel's system call interface. Naive fuzz testing of this interface wouldn't
+be very interesting: system calls with random input will fail parameter
+validation the vast majority of the time, so it would be mostly limited to
+exposing very basic bugs in system call implementations.
+
+This program attempts to improve on the naive approach by using knowledge of
+individual system call arguments to generate valid input. For example, rather
+than using random numbers for the first two arguments to ptrace(2), sysfuzz uses
+a valid ptrace command for the first argument, and a valid PID for the second
+argument. During start-up, sysfuzz allocates various types of resources (e.g.
+sockets, child processes, kqueues) for use in system call parameter generation.
