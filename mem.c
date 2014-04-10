@@ -217,7 +217,7 @@ static struct scdesc mprotect_desc =
 			.sa_name = "len",
 		},
 		{
-			.sa_type = ARG_CMD,
+			.sa_type = ARG_IFLAGMASK,
 			.sa_name = "prot",
 			.sa_cmds =
 			{
