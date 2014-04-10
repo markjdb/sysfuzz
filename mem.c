@@ -299,3 +299,32 @@ static struct scdesc munmap_desc =
 	},
 };
 SYSCALL_ADD(munmap_desc);
+
+static struct scdesc mlockall_desc =
+{
+	.sd_num = SYS_mlockall,
+	.sd_name = "mlockall",
+	.sd_nargs = 1,
+	.sd_args =
+	{
+		{
+			.sa_type = ARG_IFLAGMASK,
+			.sa_name = "flags",
+			.sa_iflags =
+			{
+				MCL_CURRENT,
+				MCL_FUTURE,
+			},
+			.sa_argcnt = 2,
+		},
+	},
+};
+SYSCALL_ADD(mlockall_desc);
+
+static struct scdesc munlockall_desc =
+{
+	.sd_num = SYS_munlockall,
+	.sd_name = "munlockall",
+	.sd_nargs = 0,
+};
+SYSCALL_ADD(munlockall_desc);
