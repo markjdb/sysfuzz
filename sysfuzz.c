@@ -1,6 +1,9 @@
+#include <sys/types.h>
 #include <sys/syscall.h>
 
 #include <err.h>
+#include <grp.h>
+#include <pwd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -103,9 +106,33 @@ scloop(struct sctable *table)
 	}
 }
 
+static void
+drop_privs()
+{
+	struct passwd *pwd;
+	struct group *grp;
+
+	if (geteuid() != 0)
+		return;
+
+	pwd = getpwnam("nobody");
+	if (pwd == NULL)
+		return;
+	grp = getgrnam("nobody");
+	if (grp == NULL)
+		return;
+
+	if (setgid(grp->gr_gid) != 0)
+		err(1, "setgid");
+	else if (setuid(pwd->pw_uid) != 0)
+		err(1, "setuid");
+}
+
 int
 main(int argc __unused, char **argv __unused)
 {
+
+	drop_privs();
 
 	argpool_init();
 
