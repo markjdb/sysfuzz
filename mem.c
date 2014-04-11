@@ -16,6 +16,7 @@ static struct scdesc mmap_desc =
 	.sd_num = SYS_mmap,
 	.sd_name = "mmap",
 	.sd_nargs = 6,
+	.sd_groups = SC_GROUP_VM,
 	.sd_args =
 	{
 		{
@@ -76,6 +77,7 @@ static struct scdesc madvise_desc =
 	.sd_num = SYS_madvise,
 	.sd_name = "madvise",
 	.sd_nargs = 3,
+	.sd_groups = SC_GROUP_VM,
 	.sd_args =
 	{
 		{
@@ -114,6 +116,7 @@ static struct scdesc mincore_desc =
 	.sd_num = SYS_mincore,
 	.sd_name = "mincore",
 	.sd_nargs = 3,
+	.sd_groups = SC_GROUP_VM,
 	.sd_fixup = mincore_fixup,
 	.sd_cleanup = mincore_cleanup,
 	.sd_args =
@@ -157,6 +160,7 @@ static struct scdesc minherit_desc =
 	.sd_num = SYS_minherit,
 	.sd_name = "minherit",
 	.sd_nargs = 3,
+	.sd_groups = SC_GROUP_VM,
 	.sd_args =
 	{
 		{
@@ -187,6 +191,7 @@ static struct scdesc mlock_desc =
 	.sd_num = SYS_mlock,
 	.sd_name = "mlock",
 	.sd_nargs = 2,
+	.sd_groups = SC_GROUP_VM,
 	.sd_args =
 	{
 		{
@@ -206,6 +211,7 @@ static struct scdesc mprotect_desc =
 	.sd_num = SYS_mprotect,
 	.sd_name = "mprotect",
 	.sd_nargs = 3,
+	.sd_groups = SC_GROUP_VM,
 	.sd_args =
 	{
 		{
@@ -237,6 +243,7 @@ static struct scdesc msync_desc =
 	.sd_num = SYS_msync,
 	.sd_name = "msync",
 	.sd_nargs = 3,
+	.sd_groups = SC_GROUP_VM,
 	.sd_args =
 	{
 		{
@@ -267,6 +274,7 @@ static struct scdesc munlock_desc =
 	.sd_num = SYS_munlock,
 	.sd_name = "munlock",
 	.sd_nargs = 2,
+	.sd_groups = SC_GROUP_VM,
 	.sd_args =
 	{
 		{
@@ -286,6 +294,7 @@ static struct scdesc munmap_desc =
 	.sd_num = SYS_munmap,
 	.sd_name = "munmap",
 	.sd_nargs = 2,
+	.sd_groups = SC_GROUP_VM,
 	.sd_args =
 	{
 		{
@@ -305,6 +314,7 @@ static struct scdesc mlockall_desc =
 	.sd_num = SYS_mlockall,
 	.sd_name = "mlockall",
 	.sd_nargs = 1,
+	.sd_groups = SC_GROUP_VM,
 	.sd_args =
 	{
 		{
@@ -326,5 +336,6 @@ static struct scdesc munlockall_desc =
 	.sd_num = SYS_munlockall,
 	.sd_name = "munlockall",
 	.sd_nargs = 0,
+	.sd_groups = SC_GROUP_VM,
 };
 SYSCALL_ADD(munlockall_desc);

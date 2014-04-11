@@ -41,6 +41,10 @@ struct scargdesc {
 	int		sa_argcnt;
 };
 
+enum scgroup {
+	SC_GROUP_VM = (1 << 0),
+};
+
 #define	SYSCALL_MAXARGS	8
 
 /*
@@ -51,6 +55,7 @@ struct scdesc {
 	int		sd_num;		/* system call number */
 	const char	*sd_name;	/* system call name */
 	int		sd_nargs;	/* number of arguments */
+	int		sd_groups;	/* system call groups */
 	void (*sd_fixup)(u_long *);	/* pre-syscall hook */
 	void (*sd_cleanup)(u_long *, u_long); /* post-syscall hook */
 	struct scargdesc sd_args[];	/* argument descriptors */
