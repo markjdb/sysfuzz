@@ -40,7 +40,7 @@ static void
 scargs_alloc(u_long *args, struct scdesc *sd)
 {
 	struct arg_memblk *memblk;
-	int cmdi;
+	int argcnt, ci;
 
 	for (int i = 0; i < sd->sd_nargs; i++) {
 		switch (sd->sd_args[i].sa_type) {
@@ -59,10 +59,14 @@ scargs_alloc(u_long *args, struct scdesc *sd)
 			args[i] = memblk->len;
 			break;
 		case ARG_CMD:
-			cmdi = random() % sd->sd_args[i].sa_argcnt;
-			args[i] = sd->sd_args[i].sa_cmds[cmdi];
+			ci = random() % sd->sd_args[i].sa_argcnt;
+			args[i] = sd->sd_args[i].sa_cmds[ci];
 			break;
 		case ARG_IFLAGMASK:
+			argcnt = sd->sd_args[i].sa_argcnt;
+			for (int fi = random() % (argcnt + 1); fi > 0; fi--)
+				args[i] |=
+				    sd->sd_args[i].sa_iflags[random() % argcnt];
 			break;
 		default:
 			args[i] = 0;
@@ -79,6 +83,8 @@ scloop(struct sctable *table)
 	u_long ret;
 
 	fork();
+
+	/* XXX need to reseed. */
 
 	while (1) {
 		sd = table->scds[random() % table->cnt];

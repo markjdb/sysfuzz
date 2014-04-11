@@ -63,7 +63,7 @@ memblk_init()
 		    MAP_ANON, -1, 0);
 		if (addr == NULL)
 			err(1, "mapping %zu bytes", len);
-		memset(addr, 0, len);
+		memset(addr, 0, len); /* XXX perhaps we should omit this occasionally. */
 
 		argpool.memblks[argpool.memblkcnt].addr = addr;
 		argpool.memblks[argpool.memblkcnt++].len = len;
