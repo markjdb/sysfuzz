@@ -42,7 +42,7 @@ sctable_alloc()
 static void
 scargs_alloc(u_long *args, struct scdesc *sd)
 {
-	struct arg_memblk *memblk;
+	struct arg_memblk memblk;
 	int argcnt, ci;
 
 	for (int i = 0; i < sd->sd_nargs; i++) {
@@ -51,15 +51,15 @@ scargs_alloc(u_long *args, struct scdesc *sd)
 			args[i] = random();
 			break;
 		case ARG_MEMADDR:
-			memblk = memblk_random();
-			args[i] = (uintptr_t)memblk->addr;
+			memblk_random(&memblk);
+			args[i] = (uintptr_t)memblk.addr;
 			if (i + 1 < sd->sd_nargs &&
 			    sd->sd_args[i + 1].sa_type == ARG_MEMLEN)
-				args[++i] = memblk->len;
+				args[++i] = memblk.len;
 			break;
 		case ARG_MEMLEN:
-			memblk = memblk_random();
-			args[i] = memblk->len;
+			memblk_random(&memblk);
+			args[i] = memblk.len;
 			break;
 		case ARG_CMD:
 			ci = random() % sd->sd_args[i].sa_argcnt;
@@ -94,7 +94,7 @@ scloop(struct sctable *table)
 		memset(args, 0, sizeof(args));
 		scargs_alloc(args, sd);
 
-		if (sd->sd_num == SYS_mmap || sd->sd_num == SYS_munmap)
+		if (sd->sd_num == SYS_mmap)
 			continue; /* XXX */
 
 		if (sd->sd_fixup != NULL)
@@ -112,6 +112,7 @@ drop_privs()
 	struct passwd *pwd;
 	struct group *grp;
 
+	return;
 	if (geteuid() != 0)
 		return;
 

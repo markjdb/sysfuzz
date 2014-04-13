@@ -2,6 +2,7 @@
 #include <err.h>
 #include <stdlib.h>
 
+#include "argpool.h"
 #include "syscall.h"
 
 /*
@@ -10,6 +11,7 @@
 
 void mincore_fixup(u_long *args);
 void mincore_cleanup(u_long *args, u_long ret);
+void munmap_cleanup(u_long *args, u_long ret);
 
 static struct scdesc mmap_desc =
 {
@@ -142,7 +144,7 @@ mincore_fixup(u_long *args)
 {
 	void *vec;
 
-	vec = malloc(args[1] / 4096 /* XXX page size */);
+	vec = malloc(args[1] / pagesize());
 	if (vec == NULL)
 		err(1, "malloc");
 	args[2] = (uintptr_t)vec;
@@ -295,6 +297,7 @@ static struct scdesc munmap_desc =
 	.sd_name = "munmap",
 	.sd_nargs = 2,
 	.sd_groups = SC_GROUP_VM,
+	.sd_cleanup = munmap_cleanup,
 	.sd_args =
 	{
 		{
@@ -308,6 +311,21 @@ static struct scdesc munmap_desc =
 	},
 };
 SYSCALL_ADD(munmap_desc);
+
+void
+munmap_cleanup(u_long *args, u_long ret)
+{
+	struct arg_memblk memblk;
+
+	if (ret != 0)
+		/* The unmap wasn't successful. */
+		return;
+
+	/* Inform the argpool layer that we've unmapped this block. */
+	memblk.addr = (void *)args[0];
+	memblk.len = args[1];
+	(void)unmapblk(&memblk);
+}
 
 static struct scdesc mlockall_desc =
 {

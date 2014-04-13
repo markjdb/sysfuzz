@@ -9,6 +9,8 @@ struct arg_memblk {
 };
 
 void argpool_init(void);
-struct arg_memblk *memblk_random(void);
+void memblk_random(struct arg_memblk *);
+int unmapblk(struct arg_memblk *);
+u_int pagesize(void);
 
 #endif /* _ARGPOOL_H_ */
