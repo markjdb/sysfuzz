@@ -133,7 +133,13 @@ int
 main(int argc __unused, char **argv __unused)
 {
 
+#ifdef notyet
+	/*
+	 * XXX there seems to be a truss/ptrace(2) bug which causes it to stop
+	 * tracing when the traced process changes its uid.
+	 */
 	drop_privs();
+#endif
 
 	argpool_init();
 
