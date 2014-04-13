@@ -1,6 +1,6 @@
 PROG=sysfuzz
 SRCS=argpool.c \
-     mem.c \
+     mmap.c \
      sysfuzz.c
 NO_MAN=
 WARNS=6
