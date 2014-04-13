@@ -106,7 +106,7 @@ scloop(struct sctable *table)
 	}
 }
 
-static void
+static void __unused
 drop_privs()
 {
 	struct passwd *pwd;
