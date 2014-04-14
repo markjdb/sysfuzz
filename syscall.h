@@ -26,6 +26,8 @@ enum argtype {
 	ARG_UID,
 	ARG_GID,
 	ARG_KQUEUE,
+	ARG_SCHED_PARAM,
+	ARG_TIMESPEC,
 };
 
 /* System call argument descriptor. */
@@ -42,7 +44,8 @@ struct scargdesc {
 };
 
 enum scgroup {
-	SC_GROUP_VM = (1 << 0),
+	SC_GROUP_VM =		(1 << 0),
+	SC_GROUP_SCHED =	(1 << 1),
 };
 
 #define	SYSCALL_MAXARGS	8
