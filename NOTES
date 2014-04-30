@@ -10,3 +10,10 @@ than using random numbers for the first two arguments to ptrace(2), sysfuzz uses
 a valid ptrace command for the first argument, and a valid PID for the second
 argument. During start-up, sysfuzz allocates various types of resources (e.g.
 sockets, child processes, kqueues) for use in system call parameter generation.
+
+-=-=-=-=-=-=-=-
+
+Brag list. Here are bugs that I've found using sysfuzz:
+
+r265002:
+http://svnweb.freebsd.org/base?view=revision&revision=265002
