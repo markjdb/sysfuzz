@@ -3,7 +3,7 @@ SRCS=argpool.c \
      mmap.c \
      sched.c \
      sysfuzz.c
-NO_MAN=
+MK_MAN=no
 WARNS=6
 
 .include <bsd.prog.mk>
