@@ -22,6 +22,7 @@ static struct {
 } argpool;
 
 static u_int _pagesize;
+static int _ncpu;
 
 static void
 memblk_init()
@@ -38,11 +39,8 @@ memblk_init()
 	    0) != 0)
 		err(1, "could not read vm.stats.vm.v_page_count");
 
-	/*
-	 * We'll map up to a quarter of the system's memory. This should become
-	 * tunable.
-	 */
-	pgcnt /= 4;
+	/* This should become tunable. */
+	pgcnt /= ncpu() * 4;
 
 	allocs = 32;
 	argpool.memblks = malloc(sizeof(*argpool.memblks) * allocs);
@@ -115,15 +113,26 @@ pagesize()
 	return (_pagesize);
 }
 
+u_int
+ncpu()
+{
+
+	return (_ncpu);
+}
+
 void
 argpool_init()
 {
-	size_t pagesizesz;
+	size_t pagesizesz, ncpusz;
 
 	pagesizesz = sizeof(_pagesize);
 	if (sysctlbyname("vm.stats.vm.v_page_size", &_pagesize, &pagesizesz,
 	    NULL, 0) != 0)
 		err(1, "could not read vm.stats.vm.v_page_size");
+
+	ncpusz = sizeof(_ncpu);
+	if (sysctlbyname("hw.ncpu", &_ncpu, &ncpusz, NULL, 0) != 0)
+		err(1, "could not read hw.ncpu");
 
 	memblk_init();
 }
