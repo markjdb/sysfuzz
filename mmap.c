@@ -227,7 +227,7 @@ static struct scdesc mprotect_desc =
 		{
 			.sa_type = ARG_IFLAGMASK,
 			.sa_name = "prot",
-			.sa_cmds =
+			.sa_iflags =
 			{
 				PROT_NONE,
 				PROT_READ,
