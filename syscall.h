@@ -46,6 +46,7 @@ struct scargdesc {
 enum scgroup {
 	SC_GROUP_VM =		(1 << 0),
 	SC_GROUP_SCHED =	(1 << 1),
+	SC_GROUP_FORK =		(1 << 2),
 };
 
 #define	SYSCALL_MAXARGS	8
