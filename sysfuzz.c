@@ -112,7 +112,6 @@ drop_privs()
 	struct passwd *pwd;
 	struct group *grp;
 
-	return;
 	if (geteuid() != 0)
 		return;
 
