@@ -1,3 +1,6 @@
+#include <sys/types.h>
+#include <sys/wait.h>
+
 #include <unistd.h>
 
 #include "syscall.h"
@@ -70,7 +73,10 @@ SYSCALL_ADD(vfork_desc);
 void
 fork_cleanup(u_long *args __unused, u_long ret)
 {
+	int status;
 
 	if (ret == 0)
 		_exit(0);
+	else
+		(void)wait(&status);
 }
