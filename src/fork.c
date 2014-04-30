@@ -6,7 +6,7 @@
  * System call definitions for fork(2) and related calls.
  */
 
-void fork_cleanup(u_long *args, u_long ret);
+void rfork_fixup(u_long *args);
 void fork_cleanup(u_long *args, u_long ret);
 
 static struct scdesc fork_desc =
@@ -25,6 +25,7 @@ static struct scdesc rfork_desc =
 	.sd_name = "rfork",
 	.sd_nargs = 1,
 	.sd_groups = SC_GROUP_FORK,
+	.sd_fixup = rfork_fixup,
 	.sd_cleanup = fork_cleanup,
 	.sd_args =
 	{
@@ -47,6 +48,14 @@ static struct scdesc rfork_desc =
 	},
 };
 SYSCALL_ADD(rfork_desc);
+
+void
+rfork_fixup(u_long *args)
+{
+
+	args[0] |= RFPROC;
+	args[0] &= ~RFMEM;
+}
 
 static struct scdesc vfork_desc =
 {
