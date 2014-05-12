@@ -2,7 +2,6 @@
 #define _SYSCALL_H_
 
 #include <sys/param.h>
-#include <sys/types.h>
 #include <sys/linker_set.h>
 #include <sys/syscall.h>
 
