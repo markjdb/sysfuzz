@@ -17,3 +17,6 @@ Brag list. Here are bugs that I've found using sysfuzz:
 
 r265002:
 http://svnweb.freebsd.org/base?view=revision&revision=265002
+
+r265843:
+http://svnweb.freebsd.org/base?view=revision&revision=265843
