@@ -111,6 +111,7 @@ drop_privs()
 {
 	struct passwd *pwd;
 	struct group *grp;
+	gid_t gid;
 
 	if (geteuid() != 0)
 		return;
@@ -122,9 +123,12 @@ drop_privs()
 	if (grp == NULL)
 		return;
 
+	gid = grp->gr_gid;
+	if (setgroups(1, &gid) != 0)
+		err(1, "setgroups");
 	if (setgid(grp->gr_gid) != 0)
 		err(1, "setgid");
-	else if (setuid(pwd->pw_uid) != 0)
+	if (setuid(pwd->pw_uid) != 0)
 		err(1, "setuid");
 }
 
