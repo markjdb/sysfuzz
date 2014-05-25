@@ -31,6 +31,8 @@
 #include <sys/linker_set.h>
 #include <sys/syscall.h>
 
+#include <stdbool.h>
+
 SET_DECLARE(syscalls, struct scdesc);
 
 #define	SYSCALL_ADD(desc)	DATA_SET(syscalls, desc)
@@ -84,13 +86,15 @@ struct scdesc {
 	int		sd_num;		/* system call number */
 	const char	*sd_name;	/* system call name */
 	int		sd_nargs;	/* number of arguments */
-	int		sd_groups;	/* system call groups */
+	u_int		sd_groups;	/* system call groups */
 	void (*sd_fixup)(u_long *);	/* pre-syscall hook */
 	void (*sd_cleanup)(u_long *, u_long); /* post-syscall hook */
 	struct scargdesc sd_args[];	/* argument descriptors */
 };
 
-int	sc_lookup(const char *, int *);
-int	scgroup_lookup(const char *, enum scgroup *);
+bool	sc_filter(const struct scdesc *, const char *, size_t, const char *,
+	    size_t);
+bool	sc_lookup(const char *, int *);
+bool	scgroup_lookup(const char *, enum scgroup *);
 
 #endif /* _SYSCALL_H_ */

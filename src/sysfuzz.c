@@ -44,10 +44,13 @@ struct sctable {
 };
 
 static struct sctable *
-sctable_alloc()
+sctable_alloc(char *sclist, char *scgrplist)
 {
 	struct sctable *table;
 	struct scdesc **desc;
+	const char *sc, *scgrp;
+	char *list;
+	size_t scs, scgrps;
 	int sccnt;
 
 	sccnt = 0;
@@ -57,11 +60,28 @@ sctable_alloc()
 	table = malloc(sizeof(*table) + sccnt * sizeof(struct scdesc *));
 	if (table == NULL)
 		err(1, "malloc");
-	table->cnt = sccnt;
+
+	/* Validate the list of syscall and syscall group filters. */
+	scs = scgrps = 0;
+	list = sclist;
+	while ((sc = strsep(&list, ",")) != NULL) {
+		if (!sc_lookup(sc, NULL))
+			errx(1, "unknown syscall '%s'", sc);
+		scs++;
+	}
+	list = scgrplist;
+	while ((scgrp = strsep(&list, ",")) != NULL) {
+		if (!scgroup_lookup(scgrp, NULL))
+			errx(1, "unknown syscall group '%s'", scgrp);
+		scgrps++;
+	}
 
 	sccnt = 0;
-	SET_FOREACH(desc, syscalls)
-		table->scds[sccnt++] = *desc;
+	SET_FOREACH(desc, syscalls) {
+		if (!sc_filter(*desc, sclist, scs, scgrplist, scgrps))
+			table->scds[sccnt++] = *desc;
+	}
+	table->cnt = sccnt;
 
 	return (table);
 }
@@ -173,6 +193,7 @@ usage()
 int
 main(int argc __unused, char **argv __unused)
 {
+	char *sclist, *scgrplist;
 	int ch;
 
 #ifdef notyet
@@ -183,10 +204,19 @@ main(int argc __unused, char **argv __unused)
 	drop_privs();
 #endif
 
+	sclist = scgrplist = NULL;
 	while ((ch = getopt(argc, argv, "c:g:x:")) != -1)
 		switch (ch) {
 		case 'c':
+			sclist = strdup(optarg);
+			if (sclist == NULL)
+				err(1, "strdup failed");
+			break;
 		case 'g':
+			scgrplist = strdup(optarg);
+			if (scgrplist == NULL)
+				err(1, "strdup failed");
+			break;
 		case 'x':
 		case '?':
 			usage();
@@ -195,7 +225,10 @@ main(int argc __unused, char **argv __unused)
 
 	argpool_init();
 
-	scloop(sctable_alloc());
+	scloop(sctable_alloc(sclist, scgrplist));
+
+	free(sclist);
+	free(scgrplist);
 
 	return (0);
 }

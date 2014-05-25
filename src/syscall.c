@@ -37,8 +37,33 @@ static struct {
 	{ SC_GROUP_FORK, "fork" },
 };
 
+/* Determine whether to fuzz the given system call. */
+bool
+sc_filter(const struct scdesc *desc, const char *sclist, size_t scs,
+    const char *scgrplist, size_t scgrps)
+{
+	const char *sc, *scgrp;
+	u_int grpmask;
+
+	for (sc = sclist; scs > 0; sc += strlen(sc) + 1) {
+		if (strcasecmp(sc, desc->sd_name) == 0)
+			return (false);
+		scs--;
+	}
+
+	grpmask = 0;
+	for (scgrp = scgrplist; scgrps > 0; scgrp += strlen(scgrp) + 1) {
+		(void)scgroup_lookup(scgrp, &grpmask);
+		scgrps--;
+	}
+	if ((grpmask & desc->sd_groups) != 0)
+		return (false);
+
+	return (sclist != NULL || scgrplist != NULL);
+}
+
 /* Look up a system call by name. */
-int
+bool
 sc_lookup(const char *name, int *sc)
 {
 	struct scdesc **_desc, *desc;
@@ -46,25 +71,27 @@ sc_lookup(const char *name, int *sc)
 	SET_FOREACH(_desc, syscalls) {
 		desc = *_desc;
 		if (strcasecmp(desc->sd_name, name) == 0) {
-			*sc = desc->sd_num;
-			return (1);
+			if (sc != NULL)
+				*sc = desc->sd_num;
+			return (true);
 		}
 	}
 
-	return (0);
+	return (false);
 }
 
 /* Look up a system call group by name. */
-int
+bool
 scgroup_lookup(const char *name, enum scgroup *group)
 {
 	u_int i;
 
 	for (i = 0; i < sizeof(scgroups) / sizeof(scgroups[0]); i++)
 		if (strcasecmp(scgroups[i].name, name) == 0) {
-			*group |= scgroups[i].id;
-			return (1);
+			if (group != NULL)
+				*group |= scgroups[i].id;
+			return (true);
 		}
 
-	return (0);
+	return (false);
 }
