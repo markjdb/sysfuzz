@@ -4,6 +4,7 @@
 #include <err.h>
 #include <grp.h>
 #include <pwd.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -132,9 +133,21 @@ drop_privs()
 		err(1, "setuid");
 }
 
+static void
+usage()
+{
+
+	fprintf(stderr,
+	    "Usage: %s -c <syscall1>[,<syscall2>,...]\n"
+	    "\t-g <scgroup1>[,<scgroup2>,...]\n"
+	    "\t-x <param>[=<value>]\n", getprogname());
+	exit(1);
+}
+
 int
 main(int argc __unused, char **argv __unused)
 {
+	int ch;
 
 #ifdef notyet
 	/*
@@ -143,6 +156,16 @@ main(int argc __unused, char **argv __unused)
 	 */
 	drop_privs();
 #endif
+
+	while ((ch = getopt(argc, argv, "c:g:x:")) != -1)
+		switch (ch) {
+		case 'c':
+		case 'g':
+		case 'x':
+		case '?':
+			usage();
+			break;
+		}
 
 	argpool_init();
 

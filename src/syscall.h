@@ -9,7 +9,7 @@ SET_DECLARE(syscalls, struct scdesc);
 
 #define	SYSCALL_ADD(desc)	DATA_SET(syscalls, desc)
 
-enum argtype {
+enum scargtype {
 	ARG_UNSPEC,
 	ARG_FD,
 	ARG_PATH,
@@ -31,7 +31,7 @@ enum argtype {
 
 /* System call argument descriptor. */
 struct scargdesc {
-	enum argtype	sa_type;	/* argument type */
+	enum scargtype	sa_type;	/* argument type */
 	const char	*sa_name;	/* argument name */
 	union {
 		int	sa_iflags[sizeof(int) * NBBY];
@@ -63,5 +63,8 @@ struct scdesc {
 	void (*sd_cleanup)(u_long *, u_long); /* post-syscall hook */
 	struct scargdesc sd_args[];	/* argument descriptors */
 };
+
+int	sc_lookup(const char *, int *);
+int	scgroup_lookup(const char *, enum scgroup *);
 
 #endif /* _SYSCALL_H_ */

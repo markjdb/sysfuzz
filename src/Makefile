@@ -3,6 +3,7 @@ SRCS=argpool.c \
      fork.c \
      mmap.c \
      sched.c \
+     syscall.c \
      sysfuzz.c
 MK_MAN=no
 WARNS=6
