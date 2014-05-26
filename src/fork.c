@@ -27,6 +27,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+#include <err.h>
 #include <unistd.h>
 
 #include "syscall.h"
@@ -86,6 +87,7 @@ rfork_fixup(u_long *args)
 	args[0] &= ~RFMEM;
 }
 
+#ifdef notyet
 static struct scdesc vfork_desc =
 {
 	.sd_num = SYS_vfork,
@@ -95,14 +97,19 @@ static struct scdesc vfork_desc =
 	.sd_cleanup = fork_cleanup,
 };
 SYSCALL_ADD(vfork_desc);
+#endif
 
 void
 fork_cleanup(u_long *args __unused, u_long ret)
 {
-	int status;
+	int status = 0;
 
 	if (ret == 0)
 		_exit(0);
-	else
-		(void)wait(&status);
+	else {
+		if (wait(&status) == -1)
+			err(1, "wait");
+		if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
+			errx(1, "unexpected exit status %d\n", status);
+	}
 }
