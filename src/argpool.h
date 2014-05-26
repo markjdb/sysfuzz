@@ -34,10 +34,12 @@ struct arg_memblk {
 	size_t	len;
 };
 
-void argpool_init(void);
-void memblk_random(struct arg_memblk *);
-int unmapblk(struct arg_memblk *);
-u_int pagesize(void);
-u_int ncpu(void);
+void	argpool_init(void);
+void	memblk_random(struct arg_memblk *);
+int	unmapblk(const struct arg_memblk *);
+int	blkreclaim(struct arg_memblk *);
+
+u_int	pagesize(void);
+u_int	ncpu(void);
 
 #endif /* _ARGPOOL_H_ */

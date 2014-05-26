@@ -35,9 +35,11 @@
  * System call definitions for mmap(2) and friends.
  */
 
-void mincore_fixup(u_long *args);
-void mincore_cleanup(u_long *args, u_long ret);
-void munmap_cleanup(u_long *args, u_long ret);
+void	mmap_fixup(u_long *);
+void	mmap_cleanup(u_long *, u_long);
+void	mincore_fixup(u_long *);
+void	mincore_cleanup(u_long *, u_long);
+void	munmap_cleanup(u_long *, u_long);
 
 static struct scdesc mmap_desc =
 {
@@ -45,6 +47,8 @@ static struct scdesc mmap_desc =
 	.sd_name = "mmap",
 	.sd_nargs = 6,
 	.sd_groups = SC_GROUP_VM,
+	.sd_fixup = mmap_fixup,
+	.sd_cleanup = mmap_cleanup,
 	.sd_args =
 	{
 		{
@@ -99,6 +103,36 @@ static struct scdesc mmap_desc =
 	},
 };
 SYSCALL_ADD(mmap_desc);
+
+void
+mmap_fixup(u_long *args)
+{
+	struct arg_memblk memblk;
+
+	if (blkreclaim(&memblk) == 0) {
+		args[0] = (u_long)(uintptr_t)memblk.addr;
+		args[1] = memblk.len;
+		args[3] &= ~(MAP_ALIGNED_SUPER | MAP_STACK | MAP_HASSEMAPHORE);
+		args[3] |= MAP_ANON;
+		args[4] = (u_long)-1; /* XXX */
+		args[5] = 0;
+	}
+}
+
+void
+mmap_cleanup(u_long *args, u_long ret)
+{
+	struct arg_memblk memblk;
+	void *addr;
+
+	addr = (void *)(uintptr_t)ret;
+	if (addr == NULL && (int)args[4] == -1) {
+		memblk.addr = addr;
+		memblk.len = args[1];
+		unmapblk(&memblk);
+	} else if (addr != (void *)(uintptr_t)args[0])
+		(void)munmap(addr, args[1]);
+}
 
 static struct scdesc madvise_desc =
 {
@@ -170,6 +204,7 @@ mincore_fixup(u_long *args)
 {
 	void *vec;
 
+	/* XXX this may map memory. */
 	vec = malloc(args[1] / pagesize());
 	if (vec == NULL)
 		err(1, "malloc");

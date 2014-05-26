@@ -126,10 +126,10 @@ memblk_random(struct arg_memblk *memblk)
 }
 
 /*
- * Add a record indicating that the specified block is going to be unmapped.
+ * Add a record indicating that the specified block has been unmapped.
  */
 int
-unmapblk(struct arg_memblk *memblk)
+unmapblk(const struct arg_memblk *memblk)
 {
 
 	/* We don't have space in the table, so indicate failure. */
@@ -139,6 +139,22 @@ unmapblk(struct arg_memblk *memblk)
 	argpool.umblks[argpool.umblkcnt].addr = memblk->addr;
 	argpool.umblks[argpool.umblkcnt].len = memblk->len;
 	argpool.umblkcnt++;
+	return (0);
+}
+
+/*
+ * Attempt to obtain a memblk that has been recorded as unmapped.
+ */
+int
+blkreclaim(struct arg_memblk *memblk)
+{
+
+	if (argpool.umblkcnt == 0)
+		return (1);
+
+	memblk->addr = argpool.umblks[argpool.umblkcnt].addr;
+	memblk->len = argpool.umblks[argpool.umblkcnt].len;
+	argpool.umblkcnt--;
 	return (0);
 }
 

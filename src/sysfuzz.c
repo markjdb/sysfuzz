@@ -141,9 +141,6 @@ scloop(struct sctable *table)
 		memset(args, 0, sizeof(args));
 		scargs_alloc(args, sd);
 
-		if (sd->sd_num == SYS_mmap)
-			continue; /* XXX */
-
 		if (sd->sd_fixup != NULL)
 			(sd->sd_fixup)(args);
 		ret = __syscall(sd->sd_num, args[0], args[1], args[2], args[3],
