@@ -153,7 +153,7 @@ scloop(struct sctable *table)
 	}
 }
 
-static void __unused
+static void
 drop_privs()
 {
 	struct passwd *pwd;
@@ -184,7 +184,7 @@ usage()
 {
 
 	fprintf(stderr,
-	    "Usage: %s -c <syscall1>[,<syscall2>,...]\n"
+	    "Usage: %s [-p] -c <syscall1>[,<syscall2>,...]\n"
 	    "\t-g <scgroup1>[,<scgroup2>,...]\n"
 	    "\t-x <param>[=<value>]\n", getprogname());
 	exit(1);
@@ -194,18 +194,10 @@ int
 main(int argc __unused, char **argv __unused)
 {
 	char *sclist, *scgrplist;
-	int ch;
-
-#ifdef notyet
-	/*
-	 * XXX there seems to be a truss/ptrace(2) bug which causes it to stop
-	 * tracing when the traced process changes its uid.
-	 */
-	drop_privs();
-#endif
+	int ch, dropprivs = 1;
 
 	sclist = scgrplist = NULL;
-	while ((ch = getopt(argc, argv, "c:g:x:")) != -1)
+	while ((ch = getopt(argc, argv, "c:g:px:")) != -1)
 		switch (ch) {
 		case 'c':
 			sclist = strdup(optarg);
@@ -217,11 +209,21 @@ main(int argc __unused, char **argv __unused)
 			if (scgrplist == NULL)
 				err(1, "strdup failed");
 			break;
+		case 'p':
+			dropprivs = 0;
+			break;
 		case 'x':
 		case '?':
 			usage();
 			break;
 		}
+
+	/*
+	 * XXX there seems to be a truss/ptrace(2) bug which causes it to stop
+	 * tracing when the traced process changes its uid.
+	 */
+	if (dropprivs)
+		drop_privs();
 
 	argpool_init();
 
