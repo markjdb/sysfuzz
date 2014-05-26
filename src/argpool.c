@@ -77,6 +77,8 @@ memblk_init()
 			allocs *= 2;
 			argpool.memblks = realloc(argpool.memblks,
 			    sizeof(*argpool.memblks) * allocs);
+			if (argpool.memblks == NULL)
+				err(1, "realloc");
 		}
 
 		/* Allow up to 1024 pages in a memory block. */
@@ -93,7 +95,8 @@ memblk_init()
 		memset(addr, 0, len); /* XXX perhaps we should omit this occasionally. */
 
 		argpool.memblks[argpool.memblkcnt].addr = addr;
-		argpool.memblks[argpool.memblkcnt++].len = len;
+		argpool.memblks[argpool.memblkcnt].len = len;
+		argpool.memblkcnt++;
 	}
 
 	/* Save some space to record blocks unmapped by munmap(2). */
@@ -103,6 +106,9 @@ memblk_init()
 		err(1, "calloc");
 }
 
+/*
+ * Randomly pick a memory block from the pool.
+ */
 void
 memblk_random(struct arg_memblk *memblk)
 {
@@ -120,15 +126,20 @@ memblk_random(struct arg_memblk *memblk)
 	memblk->len = rpages * ps;
 }
 
+/*
+ * Add a record indicating that the specified block is going to be unmapped.
+ */
 int
 unmapblk(struct arg_memblk *memblk)
 {
 
+	/* We don't have space in the table, so indicate failure. */
 	if (argpool.umblkcnt == argpool.umblkcntmax)
 		return (1);
 
 	argpool.umblks[argpool.umblkcnt].addr = memblk->addr;
-	argpool.umblks[argpool.umblkcnt++].len = memblk->len;
+	argpool.umblks[argpool.umblkcnt].len = memblk->len;
+	argpool.umblkcnt++;
 	return (0);
 }
 
