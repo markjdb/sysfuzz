@@ -29,7 +29,6 @@
 #include <sys/sysctl.h>
 
 #include <err.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -119,10 +118,10 @@ memblk_random(struct arg_memblk *memblk)
 	ps = pagesize();
 	randblk = &argpool.memblks[random() % argpool.memblkcnt];
 	pages = randblk->len / ps;
-	rpages = random() % pages;
+	rpages = random() % (pages + 1);
 
 	memblk->addr = (void *)((uintptr_t)randblk->addr +
-	    ps * (random() % (pages - rpages)));
+	    ps * (random() % (pages - rpages + 1)));
 	memblk->len = rpages * ps;
 }
 
