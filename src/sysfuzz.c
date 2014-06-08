@@ -259,6 +259,7 @@ main(int argc, char **argv)
 
 	scloop(ncalls, sctable_alloc(sclist, scgrplist));
 
+	free(scgrp);
 	free(sclist);
 	free(scgrplist);
 
