@@ -87,6 +87,21 @@ sctable_alloc(char *sclist, char *scgrplist)
 }
 
 static void
+scgrp_list(const char *scgrp)
+{
+	struct scdesc **desc;
+	enum scgroup group;
+
+	if (!scgroup_lookup(scgrp, &group))
+		errx(1, "unknown syscall group '%s'", scgrp);
+
+	SET_FOREACH(desc, syscalls) {
+		if ((group & (*desc)->sd_groups) != 0)
+			printf("%s\n", (*desc)->sd_name);
+	}
+}
+
+static void
 scargs_alloc(u_long *args, struct scdesc *sd)
 {
 	struct arg_memblk memblk;
@@ -180,21 +195,21 @@ static void
 usage()
 {
 
-	fprintf(stderr,
-	    "Usage: %s [-p] -c <syscall1>[,<syscall2>,...]\n"
-	    "\t-g <scgroup1>[,<scgroup2>,...]\n"
-	    "\t-x <param>[=<value>]\n", getprogname());
+	warnx("Usage: %s [-p] [-c <syscall1>[,<syscall2>[,...]]]\n"
+	      "\t-g <scgroup1>[,<scgroup2>[,...]]\n"
+	      "\t-x <param>[=<value>]\n"
+	      "       %s -l <scgroup>\n", getprogname(), getprogname());
 	exit(1);
 }
 
 int
 main(int argc __unused, char **argv __unused)
 {
-	char *sclist, *scgrplist;
+	char *scgrp, *sclist, *scgrplist;
 	int ch, dropprivs = 1;
 
-	sclist = scgrplist = NULL;
-	while ((ch = getopt(argc, argv, "c:g:px:")) != -1)
+	scgrp = sclist = scgrplist = NULL;
+	while ((ch = getopt(argc, argv, "c:g:l:px:")) != -1)
 		switch (ch) {
 		case 'c':
 			sclist = strdup(optarg);
@@ -206,6 +221,9 @@ main(int argc __unused, char **argv __unused)
 			if (scgrplist == NULL)
 				err(1, "strdup failed");
 			break;
+		case 'l':
+			scgrp = strdup(optarg);
+			break;
 		case 'p':
 			dropprivs = 0;
 			break;
@@ -214,6 +232,13 @@ main(int argc __unused, char **argv __unused)
 			usage();
 			break;
 		}
+
+	if (scgrp != NULL) {
+		if (argc != 3)
+			usage();
+		scgrp_list(scgrp);
+		return (0);
+	}
 
 	/*
 	 * XXX there seems to be a truss/ptrace(2) bug which causes it to stop
