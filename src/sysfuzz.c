@@ -28,6 +28,7 @@
 #include <sys/syscall.h>
 
 #include <err.h>
+#include <errno.h>
 #include <grp.h>
 #include <pwd.h>
 #include <stdio.h>
@@ -141,17 +142,17 @@ scargs_alloc(u_long *args, struct scdesc *sd)
 }
 
 static void
-scloop(struct sctable *table)
+scloop(u_long ncalls, struct sctable *table)
 {
 	u_long args[SYSCALL_MAXARGS];
 	struct scdesc *sd;
-	u_long ret;
+	u_long ret, sofar;
 
 	fork();
 
 	/* XXX need to reseed. */
 
-	while (1) {
+	for (sofar = 0; ncalls == 0 || sofar < ncalls; sofar++) {
 		sd = table->scds[random() % table->cnt];
 		memset(args, 0, sizeof(args));
 		scargs_alloc(args, sd);
@@ -195,7 +196,7 @@ static void
 usage()
 {
 
-	warnx("Usage: %s [-p] [-c <syscall1>[,<syscall2>[,...]]]\n"
+	warnx("Usage: %s [-n count] [-p] [-c <syscall1>[,<syscall2>[,...]]]\n"
 	      "\t-g <scgroup1>[,<scgroup2>[,...]]\n"
 	      "\t-x <param>[=<value>]\n"
 	      "       %s -l <scgroup>\n", getprogname(), getprogname());
@@ -203,13 +204,14 @@ usage()
 }
 
 int
-main(int argc __unused, char **argv __unused)
+main(int argc, char **argv)
 {
-	char *scgrp, *sclist, *scgrplist;
+	char *end, *scgrp, *sclist, *scgrplist;
+	u_long ncalls;
 	int ch, dropprivs = 1;
 
 	scgrp = sclist = scgrplist = NULL;
-	while ((ch = getopt(argc, argv, "c:g:l:px:")) != -1)
+	while ((ch = getopt(argc, argv, "c:g:l:n:px:")) != -1)
 		switch (ch) {
 		case 'c':
 			sclist = strdup(optarg);
@@ -223,6 +225,12 @@ main(int argc __unused, char **argv __unused)
 			break;
 		case 'l':
 			scgrp = strdup(optarg);
+			break;
+		case 'n':
+			errno = 0;
+			ncalls = strtoul(optarg, &end, 10);
+			if (optarg[0] == '\0' || *end != '\0' || errno != 0)
+				errx(1, "invalid parameter '%s' for -n", optarg);
 			break;
 		case 'p':
 			dropprivs = 0;
@@ -249,7 +257,7 @@ main(int argc __unused, char **argv __unused)
 
 	argpool_init();
 
-	scloop(sctable_alloc(sclist, scgrplist));
+	scloop(ncalls, sctable_alloc(sclist, scgrplist));
 
 	free(sclist);
 	free(scgrplist);
