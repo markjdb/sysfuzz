@@ -31,6 +31,7 @@
 #include <err.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "argpool.h"
 
@@ -46,7 +47,6 @@ static struct {
 	int			umblkcntmax;
 } argpool;
 
-static u_int _pagesize;
 static int _ncpu;
 
 static void
@@ -81,11 +81,11 @@ memblk_init()
 		}
 
 		/* Allow up to 1024 pages in a memory block. */
-		len = (random() % 1024);
+		len = random() % 1024;
 		if (len > pgcnt)
 			len = pgcnt;
 		pgcnt -= len;
-		len *= pagesize();
+		len *= getpagesize();
 
 		addr = mmap(NULL, len, PROT_READ | PROT_WRITE | PROT_EXEC,
 		    MAP_ANON, -1, 0);
@@ -115,7 +115,7 @@ memblk_random(struct arg_memblk *memblk)
 	size_t pages, rpages;
 	u_int ps;
 
-	ps = pagesize();
+	ps = getpagesize();
 	randblk = &argpool.memblks[random() % argpool.memblkcnt];
 	pages = randblk->len / ps;
 	rpages = random() % (pages + 1);
@@ -159,13 +159,6 @@ blkreclaim(struct arg_memblk *memblk)
 }
 
 u_int
-pagesize()
-{
-
-	return (_pagesize);
-}
-
-u_int
 ncpu()
 {
 
@@ -175,12 +168,7 @@ ncpu()
 void
 argpool_init()
 {
-	size_t pagesizesz, ncpusz;
-
-	pagesizesz = sizeof(_pagesize);
-	if (sysctlbyname("vm.stats.vm.v_page_size", &_pagesize, &pagesizesz,
-	    NULL, 0) != 0)
-		err(1, "could not read vm.stats.vm.v_page_size");
+	size_t ncpusz;
 
 	ncpusz = sizeof(_ncpu);
 	if (sysctlbyname("hw.ncpu", &_ncpu, &ncpusz, NULL, 0) != 0)

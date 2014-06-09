@@ -39,7 +39,6 @@ void	memblk_random(struct arg_memblk *);
 int	unmapblk(const struct arg_memblk *);
 int	blkreclaim(struct arg_memblk *);
 
-u_int	pagesize(void);
 u_int	ncpu(void);
 
 #endif /* _ARGPOOL_H_ */

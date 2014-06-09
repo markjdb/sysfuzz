@@ -27,6 +27,7 @@
 #include <sys/mman.h>
 #include <err.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "argpool.h"
 #include "syscall.h"
@@ -205,7 +206,7 @@ mincore_fixup(u_long *args)
 	void *vec;
 
 	/* XXX this may map memory. */
-	vec = malloc(args[1] / pagesize());
+	vec = malloc(args[1] / getpagesize());
 	if (vec == NULL)
 		err(1, "malloc");
 	args[2] = (uintptr_t)vec;
