@@ -144,6 +144,7 @@ unmapblk(const struct arg_memblk *memblk)
 
 /*
  * Attempt to obtain a memblk that has been recorded as unmapped.
+ * XXX pick blocks randomly rather than FILO.
  */
 int
 blkreclaim(struct arg_memblk *memblk)

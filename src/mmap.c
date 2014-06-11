@@ -132,6 +132,9 @@ mmap_cleanup(u_long *args, u_long ret)
 		memblk.len = args[1];
 		unmapblk(&memblk);
 	} else if (addr != (void *)(uintptr_t)args[0])
+		/*
+		 * If we didn't get memory at the location requested, free it.
+		 */
 		(void)munmap(addr, args[1]);
 }
 
