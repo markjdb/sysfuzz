@@ -35,8 +35,6 @@
 
 #include "argpool.h"
 
-static void memblk_init();
-
 static struct {
 	/* Blocks mmap(2)ed during initialization. */
 	struct arg_memblk	*memblks;
@@ -46,8 +44,6 @@ static struct {
 	int			umblkcnt;
 	int			umblkcntmax;
 } argpool;
-
-static int _ncpu;
 
 static void
 memblk_init()
@@ -162,18 +158,19 @@ blkreclaim(struct arg_memblk *memblk)
 u_int
 ncpu()
 {
+	size_t ncpusz;
+	int ncpu;
 
-	return (_ncpu);
+	ncpusz = sizeof(ncpu);
+	if (sysctlbyname("hw.ncpu", &ncpu, &ncpusz, NULL, 0) != 0)
+		err(1, "could not read hw.ncpu");
+
+	return (ncpu);
 }
 
 void
 argpool_init()
 {
-	size_t ncpusz;
-
-	ncpusz = sizeof(_ncpu);
-	if (sysctlbyname("hw.ncpu", &_ncpu, &ncpusz, NULL, 0) != 0)
-		err(1, "could not read hw.ncpu");
 
 	memblk_init();
 }
