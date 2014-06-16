@@ -49,6 +49,19 @@ static struct scdesc fork_desc =
 };
 SYSCALL_ADD(fork_desc);
 
+static int rfork_flags[] =
+{
+	RFPROC,
+	RFNOWAIT,
+	RFFDG,
+	RFCFDG,
+	RFTHREAD,
+	RFMEM,
+	RFSIGSHARE,
+	RFTSIGZMB,
+	RFLINUXTHPN,
+};
+
 static struct scdesc rfork_desc =
 {
 	.sd_num = SYS_rfork,
@@ -62,18 +75,8 @@ static struct scdesc rfork_desc =
 		{
 			.sa_type = ARG_IFLAGMASK,
 			.sa_name = "flags",
-			.sa_iflags =
-			{
-				RFPROC,
-				RFNOWAIT,
-				RFFDG,
-				RFCFDG,
-				RFTHREAD,
-				RFMEM,
-				RFSIGSHARE,
-				RFTSIGZMB,
-				RFLINUXTHPN,
-			},
+			.sa_iflags = rfork_flags,
+			.sa_argcnt = nitems(rfork_flags),
 		},
 	},
 };
@@ -84,7 +87,7 @@ rfork_fixup(u_long *args)
 {
 
 	args[0] |= RFPROC;
-	args[0] &= ~RFMEM;
+	args[0] &= ~(RFMEM | RFNOWAIT | RFTSIGZMB | RFLINUXTHPN);
 }
 
 #ifdef notyet
@@ -106,7 +109,7 @@ fork_cleanup(u_long *args __unused, u_long ret)
 
 	if (ret == 0)
 		_exit(0);
-	else {
+	else if ((pid_t)ret > 0) {
 		if (wait(&status) == -1)
 			err(1, "wait");
 		if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)

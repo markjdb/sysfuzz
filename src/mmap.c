@@ -24,7 +24,9 @@
  * SUCH DAMAGE.
  */
 
+#include <sys/param.h>
 #include <sys/mman.h>
+
 #include <err.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -41,6 +43,29 @@ void	mmap_cleanup(u_long *, u_long);
 void	mincore_fixup(u_long *);
 void	mincore_cleanup(u_long *, u_long);
 void	munmap_cleanup(u_long *, u_long);
+
+static int mmap_prot_flags[] =
+{
+	PROT_NONE,
+	PROT_READ,
+	PROT_WRITE,
+	PROT_EXEC,
+};
+
+static int mmap_flags[] =
+{
+	MAP_32BIT,
+	MAP_ALIGNED_SUPER,
+	MAP_ANON,
+	MAP_FIXED,
+	MAP_HASSEMAPHORE,
+	MAP_NOCORE,
+	MAP_NOSYNC,
+	MAP_PREFAULT_READ,
+	MAP_PRIVATE,
+	MAP_SHARED,
+	MAP_STACK,
+};
 
 static struct scdesc mmap_desc =
 {
@@ -63,35 +88,16 @@ static struct scdesc mmap_desc =
 		{
 			.sa_type = ARG_IFLAGMASK,
 			.sa_name = "prot",
-			.sa_iflags =
-			{
-				PROT_NONE,
-				PROT_READ,
-				PROT_WRITE,
-				PROT_EXEC
-			},
-			.sa_argcnt = 4,
+			.sa_iflags = mmap_prot_flags,
+			.sa_argcnt = nitems(mmap_prot_flags),
 
 		},
 		{
 			/* XXX how to handle MAP_ALIGNED(n)? */
 			.sa_type = ARG_IFLAGMASK,
 			.sa_name = "flags",
-			.sa_iflags =
-			{
-				MAP_32BIT,
-				MAP_ALIGNED_SUPER,
-				MAP_ANON,
-				MAP_FIXED,
-				MAP_HASSEMAPHORE,
-				MAP_NOCORE,
-				MAP_NOSYNC,
-				MAP_PREFAULT_READ,
-				MAP_PRIVATE,
-				MAP_SHARED,
-				MAP_STACK,
-			},
-			.sa_argcnt = 11,
+			.sa_iflags = mmap_flags,
+			.sa_argcnt = nitems(mmap_flags),
 		},
 		{
 			.sa_type = ARG_FD,
@@ -138,6 +144,21 @@ mmap_cleanup(u_long *args, u_long ret)
 		(void)munmap(addr, args[1]);
 }
 
+static int madvise_cmds[] =
+{
+	MADV_NORMAL,
+	MADV_RANDOM,
+	MADV_SEQUENTIAL,
+	MADV_WILLNEED,
+	MADV_DONTNEED,
+	MADV_FREE,
+	MADV_NOSYNC,
+	MADV_AUTOSYNC,
+	MADV_NOCORE,
+	MADV_CORE,
+	MADV_PROTECT,
+};
+
 static struct scdesc madvise_desc =
 {
 	.sd_num = SYS_madvise,
@@ -157,21 +178,8 @@ static struct scdesc madvise_desc =
 		{
 			.sa_type = ARG_CMD,
 			.sa_name = "behav",
-			.sa_cmds =
-			{
-				MADV_NORMAL,
-				MADV_RANDOM,
-				MADV_SEQUENTIAL,
-				MADV_WILLNEED,
-				MADV_DONTNEED,
-				MADV_FREE,
-				MADV_NOSYNC,
-				MADV_AUTOSYNC,
-				MADV_NOCORE,
-				MADV_CORE,
-				MADV_PROTECT,
-			},
-			.sa_argcnt = 11,
+			.sa_cmds = madvise_cmds,
+			.sa_argcnt = nitems(madvise_cmds),
 		},
 	},
 };
@@ -222,6 +230,13 @@ mincore_cleanup(u_long *args, u_long ret __unused)
 	free((void *)args[2]);
 }
 
+static int minherit_cmds[] =
+{
+	INHERIT_SHARE,
+	INHERIT_NONE,
+	INHERIT_COPY,
+};
+
 static struct scdesc minherit_desc =
 {
 	.sd_num = SYS_minherit,
@@ -241,13 +256,8 @@ static struct scdesc minherit_desc =
 		{
 			.sa_type = ARG_CMD,
 			.sa_name = "inherit",
-			.sa_cmds =
-			{
-				INHERIT_SHARE,
-				INHERIT_NONE,
-				INHERIT_COPY,
-			},
-			.sa_argcnt = 3,
+			.sa_cmds = minherit_cmds,
+			.sa_argcnt = nitems(minherit_cmds),
 		},
 	},
 };
@@ -292,18 +302,19 @@ static struct scdesc mprotect_desc =
 		{
 			.sa_type = ARG_IFLAGMASK,
 			.sa_name = "prot",
-			.sa_iflags =
-			{
-				PROT_NONE,
-				PROT_READ,
-				PROT_WRITE,
-				PROT_EXEC,
-			},
-			.sa_argcnt = 4,
+			.sa_iflags = mmap_prot_flags,
+			.sa_argcnt = nitems(mmap_prot_flags),
 		},
 	},
 };
 SYSCALL_ADD(mprotect_desc);
+
+static int msync_cmds[] =
+{
+	MS_ASYNC,
+	MS_SYNC,
+	MS_INVALIDATE,
+};
 
 static struct scdesc msync_desc =
 {
@@ -324,13 +335,8 @@ static struct scdesc msync_desc =
 		{
 			.sa_type = ARG_CMD,
 			.sa_name = "prot",
-			.sa_cmds =
-			{
-				MS_ASYNC,
-				MS_SYNC,
-				MS_INVALIDATE,
-			},
-			.sa_argcnt = 3,
+			.sa_cmds = msync_cmds,
+			.sa_argcnt = nitems(msync_cmds),
 		},
 	},
 };
@@ -392,6 +398,12 @@ munmap_cleanup(u_long *args, u_long ret)
 	(void)unmapblk(&memblk);
 }
 
+static int mlockall_flags[] =
+{
+	MCL_CURRENT,
+	MCL_FUTURE,
+};
+
 static struct scdesc mlockall_desc =
 {
 	.sd_num = SYS_mlockall,
@@ -403,12 +415,8 @@ static struct scdesc mlockall_desc =
 		{
 			.sa_type = ARG_IFLAGMASK,
 			.sa_name = "flags",
-			.sa_iflags =
-			{
-				MCL_CURRENT,
-				MCL_FUTURE,
-			},
-			.sa_argcnt = 2,
+			.sa_iflags = mlockall_flags,
+			.sa_argcnt = nitems(mlockall_flags),
 		},
 	},
 };

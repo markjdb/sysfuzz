@@ -76,6 +76,13 @@ static struct scdesc sched_getparam_desc __unused =
 SYSCALL_ADD(sched_getparam_desc);
 #endif
 
+static int sched_policies[] =
+{
+	SCHED_FIFO,
+	SCHED_OTHER,
+	SCHED_RR,
+};
+
 static struct scdesc sched_setscheduler_desc __unused =
 {
 	.sd_num = SYS_sched_setscheduler,
@@ -91,13 +98,8 @@ static struct scdesc sched_setscheduler_desc __unused =
 		{
 			.sa_type = ARG_CMD,
 			.sa_name = "policy",
-			.sa_cmds =
-			{
-				SCHED_FIFO,
-				SCHED_OTHER,
-				SCHED_RR,
-			},
-			.sa_argcnt = 3,
+			.sa_cmds = sched_policies,
+			.sa_argcnt = nitems(sched_policies),
 		},
 		{
 			.sa_type = ARG_SCHED_PARAM,
@@ -149,13 +151,8 @@ static struct scdesc sched_get_priority_max_desc __unused =
 		{
 			.sa_type = ARG_CMD,
 			.sa_name = "policy",
-			.sa_cmds =
-			{
-				SCHED_FIFO,
-				SCHED_OTHER,
-				SCHED_RR,
-			},
-			.sa_argcnt = 3,
+			.sa_cmds = sched_policies,
+			.sa_argcnt = nitems(sched_policies),
 		},
 	},
 };
@@ -174,13 +171,8 @@ static struct scdesc sched_get_priority_min_desc __unused =
 		{
 			.sa_type = ARG_CMD,
 			.sa_name = "policy",
-			.sa_cmds =
-			{
-				SCHED_FIFO,
-				SCHED_OTHER,
-				SCHED_RR,
-			},
-			.sa_argcnt = 3,
+			.sa_cmds = sched_policies,
+			.sa_argcnt = nitems(sched_policies),
 		},
 	},
 };

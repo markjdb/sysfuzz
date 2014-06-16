@@ -62,10 +62,9 @@ struct scargdesc {
 	enum scargtype	sa_type;	/* argument type */
 	const char	*sa_name;	/* argument name */
 	union {
-		int	sa_iflags[sizeof(int) * NBBY];
-		long	sa_lflags[sizeof(long) * NBBY];
-#define	SA_MAXCMDS	64
-		int	sa_cmds[SA_MAXCMDS];
+		int	*sa_iflags;
+		long	*sa_lflags;
+		int	*sa_cmds;
 	};
 	int		sa_argcnt;
 };
