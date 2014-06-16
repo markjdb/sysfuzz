@@ -34,6 +34,8 @@
 #include <unistd.h>
 
 #include "argpool.h"
+#include "options.h"
+#include "util.h"
 
 static struct {
 	/* Blocks mmap(2)ed during initialization. */
@@ -60,8 +62,7 @@ memblk_init()
 	    0) != 0)
 		err(1, "could not read vm.stats.vm.v_page_count");
 
-	/* This should become tunable. */
-	pgcnt /= ncpu() * 4;
+	pgcnt /= option_number("memblk-system-ratio");
 
 	allocs = 32;
 	argpool.memblks = malloc(sizeof(*argpool.memblks) * allocs);
@@ -76,8 +77,8 @@ memblk_init()
 				err(1, "realloc");
 		}
 
-		/* Allow up to 1024 pages in a memory block. */
-		len = random() % 1024;
+		/* Allow up to memblk-max-size pages in a memory block. */
+		len = random() % option_number("memblk-max-size");
 		if (len > pgcnt)
 			len = pgcnt;
 		pgcnt -= len;
@@ -153,19 +154,6 @@ blkreclaim(struct arg_memblk *memblk)
 	memblk->len = argpool.umblks[argpool.umblkcnt].len;
 	argpool.umblkcnt--;
 	return (0);
-}
-
-u_int
-ncpu()
-{
-	size_t ncpusz;
-	int ncpu;
-
-	ncpusz = sizeof(ncpu);
-	if (sysctlbyname("hw.ncpu", &ncpu, &ncpusz, NULL, 0) != 0)
-		err(1, "could not read hw.ncpu");
-
-	return (ncpu);
 }
 
 void

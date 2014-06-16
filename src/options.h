@@ -24,19 +24,16 @@
  * SUCH DAMAGE.
  */
 
-#ifndef _ARGPOOL_H_
-#define _ARGPOOL_H_
+#ifndef _OPTIONS_H_
+#define	_OPTIONS_H_
 
-#include <sys/types.h>
+#include <stdbool.h>
 
-struct arg_memblk {
-	void	*addr;
-	size_t	len;
-};
+void		options_init(char **);
+void		options_dump(void);
 
-void	argpool_init(void);
-void	memblk_random(struct arg_memblk *);
-int	unmapblk(const struct arg_memblk *);
-int	blkreclaim(struct arg_memblk *);
+bool		option_flag(const char *);
+uint64_t	option_number(const char *);
+const char	*option_string(const char *);
 
-#endif /* _ARGPOOL_H_ */
+#endif

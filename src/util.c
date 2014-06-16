@@ -24,19 +24,23 @@
  * SUCH DAMAGE.
  */
 
-#ifndef _ARGPOOL_H_
-#define _ARGPOOL_H_
-
 #include <sys/types.h>
+#include <sys/sysctl.h>
 
-struct arg_memblk {
-	void	*addr;
-	size_t	len;
-};
+#include <err.h>
+#include <stdlib.h>
 
-void	argpool_init(void);
-void	memblk_random(struct arg_memblk *);
-int	unmapblk(const struct arg_memblk *);
-int	blkreclaim(struct arg_memblk *);
+#include "util.h"
 
-#endif /* _ARGPOOL_H_ */
+u_int
+ncpu()
+{
+	size_t ncpusz;
+	int ncpu;
+
+	ncpusz = sizeof(ncpu);
+	if (sysctlbyname("hw.ncpu", &ncpu, &ncpusz, NULL, 0) != 0)
+		err(1, "could not read hw.ncpu");
+
+	return (ncpu);
+}

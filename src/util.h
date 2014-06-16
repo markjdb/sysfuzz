@@ -24,19 +24,9 @@
  * SUCH DAMAGE.
  */
 
-#ifndef _ARGPOOL_H_
-#define _ARGPOOL_H_
+#ifndef _UTIL_H_
+#define	_UTIL_H_
 
-#include <sys/types.h>
+u_int	ncpu(void);
 
-struct arg_memblk {
-	void	*addr;
-	size_t	len;
-};
-
-void	argpool_init(void);
-void	memblk_random(struct arg_memblk *);
-int	unmapblk(const struct arg_memblk *);
-int	blkreclaim(struct arg_memblk *);
-
-#endif /* _ARGPOOL_H_ */
+#endif

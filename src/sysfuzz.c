@@ -37,6 +37,7 @@
 #include <unistd.h>
 
 #include "argpool.h"
+#include "options.h"
 #include "syscall.h"
 
 struct sctable {
@@ -195,28 +196,41 @@ drop_privs()
 static void
 usage()
 {
+	const char *pn = getprogname();
 
-	warnx("Usage: %s [-n count] [-p] [-c <syscall1>[,<syscall2>[,...]]]\n"
-	      "\t-g <scgroup1>[,<scgroup2>[,...]]\n"
-	      "\t-x <param>[=<value>]\n"
-	      "       %s -l <scgroup>\n", getprogname(), getprogname());
+	fprintf(stderr,
+	    "Usage:\t%s [-n count] [-p] [-c <syscall1>[,<syscall2>[,...]]]\n"
+	    "\t    -g <scgroup1>[,<scgroup2>[,...]]\n"
+	    "\t    -x <param>[=<value>]\n", pn);
+	fprintf(stderr, "\t%s -d\n", pn);
+	fprintf(stderr, "\t%s -l <scgroup>\n", pn);
 	exit(1);
 }
 
 int
 main(int argc, char **argv)
 {
+	char **option, **options;
 	char *end, *scgrp, *sclist, *scgrplist;
 	u_long ncalls;
-	int ch, dropprivs = 1;
+	bool dropprivs = true, dumpopts = false;
+	int ch;
+
+	options = calloc(argc + 1, sizeof(*options));
+	if (options == NULL)
+		err(1, "calloc");
+	option = options;
 
 	scgrp = sclist = scgrplist = NULL;
-	while ((ch = getopt(argc, argv, "c:g:l:n:px:")) != -1)
+	while ((ch = getopt(argc, argv, "c:dg:l:n:px:")) != -1)
 		switch (ch) {
 		case 'c':
 			sclist = strdup(optarg);
 			if (sclist == NULL)
 				err(1, "strdup failed");
+			break;
+		case 'd':
+			dumpopts = true;
 			break;
 		case 'g':
 			scgrplist = strdup(optarg);
@@ -233,20 +247,38 @@ main(int argc, char **argv)
 				errx(1, "invalid parameter '%s' for -n", optarg);
 			break;
 		case 'p':
-			dropprivs = 0;
+			dropprivs = false;
 			break;
 		case 'x':
+			*option = strdup(optarg);
+			option++;
+			break;
 		case '?':
 			usage();
 			break;
 		}
 
+	/* Initialize runtime parameters. */
+	options_init(options);
+	free(options);
+
 	if (scgrp != NULL) {
 		if (argc != 3)
 			usage();
 		scgrp_list(scgrp);
+		free(scgrp);
 		return (0);
 	}
+
+	if (dumpopts) {
+		if (argc != 2)
+			usage();
+		options_dump();
+		return (0);
+	}
+
+	/* Create input pools for system calls. */
+	argpool_init();
 
 	/*
 	 * XXX there seems to be a truss/ptrace(2) bug which causes it to stop
@@ -255,11 +287,8 @@ main(int argc, char **argv)
 	if (dropprivs)
 		drop_privs();
 
-	argpool_init();
-
 	scloop(ncalls, sctable_alloc(sclist, scgrplist));
 
-	free(scgrp);
 	free(sclist);
 	free(scgrplist);
 
