@@ -1,12 +1,12 @@
 PROG=	sysfuzz
 SRCS=	argpool.c \
 	fork.c \
-	mmap.c \
 	options.c \
 	sched.c \
 	syscall.c \
 	sysfuzz.c \
-	util.c
+	util.c \
+	vm.c
 
 DEBUG_FLAGS+=-g
 
