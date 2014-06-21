@@ -117,7 +117,7 @@ mmap_fixup(u_long *args)
 {
 	struct arg_memblk memblk;
 
-	if (blkreclaim(&memblk) == 0) {
+	if (ap_memblk_reclaim(&memblk) == 0) {
 		args[0] = (u_long)(uintptr_t)memblk.addr;
 		args[1] = memblk.len;
 		args[3] &= ~(MAP_ALIGNED_SUPER | MAP_STACK | MAP_HASSEMAPHORE);
@@ -137,7 +137,7 @@ mmap_cleanup(u_long *args, u_long ret)
 	if (addr == NULL && (int)args[4] == -1) {
 		memblk.addr = addr;
 		memblk.len = args[1];
-		unmapblk(&memblk);
+		ap_memblk_unmap(&memblk);
 	} else if (addr != (void *)(uintptr_t)args[0])
 		/*
 		 * If we didn't get memory at the location requested, free it.
@@ -396,7 +396,7 @@ munmap_cleanup(u_long *args, u_long ret)
 	/* Inform the argpool layer that we've unmapped this block. */
 	memblk.addr = (void *)args[0];
 	memblk.len = args[1];
-	(void)unmapblk(&memblk);
+	(void)ap_memblk_unmap(&memblk);
 }
 
 static int mlockall_flags[] =

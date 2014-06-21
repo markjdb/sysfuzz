@@ -34,9 +34,9 @@ struct arg_memblk {
 	size_t	len;
 };
 
-void	argpool_init(void);
-void	memblk_random(struct arg_memblk *);
-int	unmapblk(const struct arg_memblk *);
-int	blkreclaim(struct arg_memblk *);
+void	ap_init(void);
+void	ap_memblk_random(struct arg_memblk *);
+int	ap_memblk_unmap(const struct arg_memblk *);
+int	ap_memblk_reclaim(struct arg_memblk *);
 
 #endif /* _ARGPOOL_H_ */

@@ -115,14 +115,14 @@ scargs_alloc(u_long *args, struct scdesc *sd)
 			args[i] = random();
 			break;
 		case ARG_MEMADDR:
-			memblk_random(&memblk);
+			ap_memblk_random(&memblk);
 			args[i] = (uintptr_t)memblk.addr;
 			if (i + 1 < sd->sd_nargs &&
 			    sd->sd_args[i + 1].sa_type == ARG_MEMLEN)
 				args[++i] = memblk.len;
 			break;
 		case ARG_MEMLEN:
-			memblk_random(&memblk);
+			ap_memblk_random(&memblk);
 			args[i] = memblk.len;
 			break;
 		case ARG_CMD:
@@ -278,7 +278,7 @@ main(int argc, char **argv)
 	}
 
 	/* Create input pools for system calls. */
-	argpool_init();
+	ap_init();
 
 	/*
 	 * XXX there seems to be a truss/ptrace(2) bug which causes it to stop

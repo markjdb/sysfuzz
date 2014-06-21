@@ -99,7 +99,7 @@ memblk_init()
  * Randomly pick a memory block from the pool.
  */
 void
-memblk_random(struct arg_memblk *memblk)
+ap_memblk_random(struct arg_memblk *memblk)
 {
 	struct arg_memblk *randblk;
 	size_t pages, rpages;
@@ -119,7 +119,7 @@ memblk_random(struct arg_memblk *memblk)
  * Add a record indicating that the specified block has been unmapped.
  */
 int
-unmapblk(const struct arg_memblk *memblk)
+ap_memblk_unmap(const struct arg_memblk *memblk)
 {
 
 	/* We don't have space in the table, so indicate failure. */
@@ -137,7 +137,7 @@ unmapblk(const struct arg_memblk *memblk)
  * XXX pick blocks randomly rather than FILO.
  */
 int
-blkreclaim(struct arg_memblk *memblk)
+ap_memblk_reclaim(struct arg_memblk *memblk)
 {
 
 	if (argpool.umblkcnt == 0)
@@ -150,7 +150,7 @@ blkreclaim(struct arg_memblk *memblk)
 }
 
 void
-argpool_init()
+ap_init()
 {
 
 	memblk_init();
