@@ -65,6 +65,7 @@ static int mmap_flags[] =
 	MAP_PRIVATE,
 	MAP_SHARED,
 	MAP_STACK,
+	MAP_EXCL,
 };
 
 static struct scdesc mmap_desc =
