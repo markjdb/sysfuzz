@@ -174,11 +174,10 @@ init_defaults()
 		};
 	} options[] = {
 	{
-		.name = "memblk-system-ratio",
-		.description =
-	    "The inverse of the fraction of system memory to use for memblks.",
+		.name = "memblk-page-count",
+		.description = "The total number of pages to map in memblks.",
 		.type = NV_TYPE_NUMBER,
-		.number = ncpu() * 4,
+		.number = pagecnt() / (ncpu() * 4),
 	},
 	{
 		.name = "memblk-max-size",

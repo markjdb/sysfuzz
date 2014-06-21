@@ -28,5 +28,6 @@
 #define	_UTIL_H_
 
 u_int	ncpu(void);
+u_int	pagecnt(void);
 
 #endif

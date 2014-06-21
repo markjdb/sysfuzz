@@ -26,7 +26,6 @@
 
 #include <sys/types.h>
 #include <sys/mman.h>
-#include <sys/sysctl.h>
 
 #include <err.h>
 #include <stdlib.h>
@@ -51,19 +50,13 @@ static void
 memblk_init()
 {
 	void *addr;
-	size_t pgcntsz, len;
+	size_t len;
 	u_int pgcnt;
 	int allocs;
 
 	memset(&argpool, 0, sizeof(argpool));
 
-	pgcntsz = sizeof(pgcnt);
-	if (sysctlbyname("vm.stats.vm.v_page_count", &pgcnt, &pgcntsz, NULL,
-	    0) != 0)
-		err(1, "could not read vm.stats.vm.v_page_count");
-
-	pgcnt /= option_number("memblk-system-ratio");
-
+	pgcnt = option_number("memblk-page-count");
 	allocs = 32;
 	argpool.memblks = malloc(sizeof(*argpool.memblks) * allocs);
 	if (argpool.memblks == NULL)

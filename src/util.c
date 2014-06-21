@@ -44,3 +44,17 @@ ncpu()
 
 	return (ncpu);
 }
+
+u_int
+pagecnt()
+{
+	size_t pgcntsz;
+	int pgcnt;
+
+	pgcntsz = sizeof(pgcnt);
+	if (sysctlbyname("vm.stats.vm.v_page_count", &pgcnt, &pgcntsz,
+	    NULL, 0) != 0)
+		err(1, "could not read vm.stats.vm.v_page_count");
+
+	return (pgcnt);
+}
