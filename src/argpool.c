@@ -33,7 +33,7 @@
 #include <unistd.h>
 
 #include "argpool.h"
-#include "options.h"
+#include "params.h"
 #include "util.h"
 
 static struct {
@@ -56,7 +56,7 @@ memblk_init()
 
 	memset(&argpool, 0, sizeof(argpool));
 
-	pgcnt = option_number("memblk-page-count");
+	pgcnt = param_number("memblk-page-count");
 	allocs = 32;
 	argpool.memblks = malloc(sizeof(*argpool.memblks) * allocs);
 	if (argpool.memblks == NULL)
@@ -71,7 +71,7 @@ memblk_init()
 		}
 
 		/* Allow up to memblk-max-size pages in a memory block. */
-		len = random() % option_number("memblk-max-size");
+		len = random() % param_number("memblk-max-size");
 		if (len > pgcnt)
 			len = pgcnt;
 		pgcnt -= len;

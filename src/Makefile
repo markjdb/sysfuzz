@@ -2,7 +2,7 @@ PROG=	sysfuzz
 SRCS=	argpool.c \
 	fork.c \
 	mmap.c \
-	options.c \
+	params.c \
 	sched.c \
 	syscall.c \
 	sysfuzz.c \

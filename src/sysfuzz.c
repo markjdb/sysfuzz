@@ -39,7 +39,7 @@
 #include <unistd.h>
 
 #include "argpool.h"
-#include "options.h"
+#include "params.h"
 #include "syscall.h"
 #include "util.h"
 
@@ -244,16 +244,16 @@ usage()
 int
 main(int argc, char **argv)
 {
-	char **option, **options;
+	char **param, **params;
 	char *end, *scgrp, *sclist, *scgrplist;
 	u_long ncalls, seed;
-	bool dropprivs = true, dumpopts = false;
+	bool dropprivs = true, dumpparams = false;
 	int ch;
 
-	options = calloc(argc + 1, sizeof(*options));
-	if (options == NULL)
+	params = calloc(argc + 1, sizeof(*params));
+	if (params == NULL)
 		err(1, "calloc");
-	option = options;
+	param = params;
 
 	seed = pickseed();
 
@@ -266,7 +266,7 @@ main(int argc, char **argv)
 				err(1, "strdup failed");
 			break;
 		case 'd':
-			dumpopts = true;
+			dumpparams = true;
 			break;
 		case 'g':
 			scgrplist = strdup(optarg);
@@ -292,8 +292,7 @@ main(int argc, char **argv)
 				errx(1, "invalid parameter '%s' for -s", optarg);
 			break;
 		case 'x':
-			*option = strdup(optarg);
-			option++;
+			*param++ = strdup(optarg);
 			break;
 		case '?':
 			usage();
@@ -303,21 +302,21 @@ main(int argc, char **argv)
 	printf("%s: seeding with %lu\n", getprogname(), seed);
 
 	/* Initialize runtime parameters. */
-	options_init(options);
-	free(options);
+	params_init(params);
+	free(params);
+
+	if (dumpparams) {
+		if (argc != 2)
+			usage();
+		params_dump();
+		return (0);
+	}
 
 	if (scgrp != NULL) {
 		if (argc != 3)
 			usage();
 		scgrp_list(scgrp);
 		free(scgrp);
-		return (0);
-	}
-
-	if (dumpopts) {
-		if (argc != 2)
-			usage();
-		options_dump();
 		return (0);
 	}
 
