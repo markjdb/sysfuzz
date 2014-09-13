@@ -185,6 +185,12 @@ init_defaults()
 		.type = NV_TYPE_NUMBER,
 		.number = 1024,
 	},
+	{
+		.name = "num-fuzzers",
+		.description = "The number of fuzzer processes to run.",
+		.type = NV_TYPE_NUMBER,
+		.number = ncpu(),
+	},
 	};
 
 	for (u_int i = 0; i < nitems(params); i++) {

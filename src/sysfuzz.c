@@ -153,7 +153,7 @@ scloop(u_long ncalls, u_long seed, struct sctable *table)
 	u_int n;
 	int status;
 
-	for (n = ncpu(); n > 0; n--) {
+	for (n = param_number("num-fuzzers"); n > 0; n--) {
 		pid_t pid = fork();
 		if (pid == -1)
 			err(1, "fork");
