@@ -26,9 +26,11 @@
 
 #include <sys/types.h>
 #include <sys/syscall.h>
+#include <sys/wait.h>
 
 #include <err.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <grp.h>
 #include <pwd.h>
 #include <stdio.h>
@@ -39,6 +41,7 @@
 #include "argpool.h"
 #include "options.h"
 #include "syscall.h"
+#include "util.h"
 
 struct sctable {
 	int		cnt;
@@ -143,15 +146,26 @@ scargs_alloc(u_long *args, struct scdesc *sd)
 }
 
 static void
-scloop(u_long ncalls, struct sctable *table)
+scloop(u_long ncalls, u_long seed, struct sctable *table)
 {
-	u_long args[SYSCALL_MAXARGS];
+	u_long args[SYSCALL_MAXARGS], ret, sofar;
 	struct scdesc *sd;
-	u_long ret, sofar;
+	u_int n;
+	int status;
 
-	fork();
+	for (n = ncpu(); n > 0; n--) {
+		pid_t pid = fork();
+		if (pid == -1)
+			err(1, "fork");
+		else if (pid == 0)
+			break;
+	}
 
-	/* XXX need to reseed. */
+	if (n == 0) {
+		while (true)
+			wait(&status);
+	} else
+		srandom(seed + n);
 
 	for (sofar = 0; ncalls == 0 || sofar < ncalls; sofar++) {
 		sd = table->scds[random() % table->cnt];
@@ -193,6 +207,26 @@ drop_privs()
 		err(1, "setuid");
 }
 
+static u_long
+pickseed(void)
+{
+	u_long seed;
+	ssize_t bytes;
+	int fd;
+
+	fd = open("/dev/random", O_RDONLY);
+	if (fd < 0)
+		err(1, "opening /dev/random");
+
+	bytes = read(fd, &seed, sizeof(seed));
+	if (bytes < 0)
+		err(1, "reading from /dev/random");
+	else if (bytes != sizeof(seed))
+		errx(1, "short read from /dev/random (got %zd bytes)", bytes);
+
+	return (seed);
+}
+
 static void
 usage()
 {
@@ -200,8 +234,8 @@ usage()
 
 	fprintf(stderr,
 	    "Usage:\t%s [-n count] [-p] [-c <syscall1>[,<syscall2>[,...]]]\n"
-	    "\t    -g <scgroup1>[,<scgroup2>[,...]]\n"
-	    "\t    -x <param>[=<value>]\n", pn);
+	    "\t    [-g <scgroup1>[,<scgroup2>[,...]]]\n"
+	    "\t    [-s <seed>] [-x <param>[=<value>]]\n", pn);
 	fprintf(stderr, "\t%s -d\n", pn);
 	fprintf(stderr, "\t%s -l <scgroup>\n", pn);
 	exit(1);
@@ -212,7 +246,7 @@ main(int argc, char **argv)
 {
 	char **option, **options;
 	char *end, *scgrp, *sclist, *scgrplist;
-	u_long ncalls;
+	u_long ncalls, seed;
 	bool dropprivs = true, dumpopts = false;
 	int ch;
 
@@ -221,8 +255,10 @@ main(int argc, char **argv)
 		err(1, "calloc");
 	option = options;
 
+	seed = pickseed();
+
 	scgrp = sclist = scgrplist = NULL;
-	while ((ch = getopt(argc, argv, "c:dg:l:n:px:")) != -1)
+	while ((ch = getopt(argc, argv, "c:dg:l:n:ps:x:")) != -1)
 		switch (ch) {
 		case 'c':
 			sclist = strdup(optarg);
@@ -249,6 +285,12 @@ main(int argc, char **argv)
 		case 'p':
 			dropprivs = false;
 			break;
+		case 's':
+			errno = 0;
+			seed = strtoul(optarg, &end, 10);
+			if (optarg[0] == '\0' || *end != '\0' || errno != 0)
+				errx(1, "invalid parameter '%s' for -s", optarg);
+			break;
 		case 'x':
 			*option = strdup(optarg);
 			option++;
@@ -257,6 +299,8 @@ main(int argc, char **argv)
 			usage();
 			break;
 		}
+
+	printf("%s: seeding with %lu\n", getprogname(), seed);
 
 	/* Initialize runtime parameters. */
 	options_init(options);
@@ -287,7 +331,7 @@ main(int argc, char **argv)
 	if (dropprivs)
 		drop_privs();
 
-	scloop(ncalls, sctable_alloc(sclist, scgrplist));
+	scloop(ncalls, seed, sctable_alloc(sclist, scgrplist));
 
 	free(sclist);
 	free(scgrplist);
