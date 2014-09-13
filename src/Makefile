@@ -8,6 +8,8 @@ SRCS=	argpool.c \
 	sysfuzz.c \
 	util.c
 
+BINDIR=/usr/local/bin
+
 DEBUG_FLAGS+=-g
 
 LDADD+=	-lnv
