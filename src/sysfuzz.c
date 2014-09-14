@@ -97,6 +97,7 @@ scgrp_list(const char *scgrp)
 	struct scdesc **desc;
 	enum scgroup group;
 
+	group = 0;
 	if (!scgroup_lookup(scgrp, &group))
 		errx(1, "unknown syscall group '%s'", scgrp);
 
