@@ -153,6 +153,8 @@ scloop(u_long ncalls, u_long seed, struct sctable *table)
 	u_int n;
 	int status;
 
+	printf("%s: seeding with %lu\n", getprogname(), seed);
+
 	for (n = param_number("num-fuzzers"); n > 0; n--) {
 		pid_t pid = fork();
 		if (pid == -1)
@@ -299,8 +301,6 @@ main(int argc, char **argv)
 			usage();
 			break;
 		}
-
-	printf("%s: seeding with %lu\n", getprogname(), seed);
 
 	/* Initialize runtime parameters. */
 	params_init(params);
