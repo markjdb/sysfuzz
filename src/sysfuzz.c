@@ -210,19 +210,20 @@ drop_privs()
 static u_long
 pickseed(void)
 {
+	const char *path = "/dev/urandom";
 	u_long seed;
 	ssize_t bytes;
 	int fd;
 
-	fd = open("/dev/random", O_RDONLY);
+	fd = open(path, O_RDONLY);
 	if (fd < 0)
-		err(1, "opening /dev/random");
+		err(1, "opening %s", path);
 
 	bytes = read(fd, &seed, sizeof(seed));
 	if (bytes < 0)
-		err(1, "reading from /dev/random");
+		err(1, "reading from %s", path);
 	else if (bytes != sizeof(seed))
-		errx(1, "short read from /dev/random (got %zd bytes)", bytes);
+		errx(1, "short read from %s (got %zd bytes)", path, bytes);
 
 	return (seed);
 }
