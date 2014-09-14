@@ -48,6 +48,7 @@ struct sctable {
 	struct scdesc	*scds[1];
 };
 
+/* Allocate a table of system call descriptors. */
 static struct sctable *
 sctable_alloc(char *sclist, char *scgrplist)
 {
@@ -91,8 +92,9 @@ sctable_alloc(char *sclist, char *scgrplist)
 	return (table);
 }
 
+/* List the members of the given system call group. */
 static void
-scgrp_list(const char *scgrp)
+scgroup_list(const char *scgrp)
 {
 	struct scdesc **desc;
 	enum scgroup group;
@@ -184,6 +186,7 @@ scloop(u_long ncalls, u_long seed, struct sctable *table)
 	}
 }
 
+/* If we're root, drop privileges. */
 static void
 drop_privs()
 {
@@ -265,20 +268,16 @@ main(int argc, char **argv)
 	while ((ch = getopt(argc, argv, "c:dg:l:n:ps:x:")) != -1)
 		switch (ch) {
 		case 'c':
-			sclist = strdup(optarg);
-			if (sclist == NULL)
-				err(1, "strdup failed");
+			sclist = xstrdup(optarg);
 			break;
 		case 'd':
 			dumpparams = true;
 			break;
 		case 'g':
-			scgrplist = strdup(optarg);
-			if (scgrplist == NULL)
-				err(1, "strdup failed");
+			scgrplist = xstrdup(optarg);
 			break;
 		case 'l':
-			scgrp = strdup(optarg);
+			scgrp = xstrdup(optarg);
 			break;
 		case 'n':
 			errno = 0;
@@ -317,7 +316,7 @@ main(int argc, char **argv)
 	if (scgrp != NULL) {
 		if (argc != 3)
 			usage();
-		scgrp_list(scgrp);
+		scgroup_list(scgrp);
 		free(scgrp);
 		return (0);
 	}
