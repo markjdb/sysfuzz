@@ -1,7 +1,6 @@
 PROG=	sysfuzz
 SRCS=	argpool.c \
 	fork.c \
-	mmap.c \
 	params.c \
 	sched.c \
 	syscall.c \
