@@ -29,6 +29,7 @@
 
 #include <err.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "util.h"
 
@@ -57,4 +58,13 @@ pagecnt()
 		err(1, "could not read vm.stats.vm.v_page_count");
 
 	return (pgcnt);
+}
+
+char *
+xstrdup(const char *str)
+{
+	char *ret = strdup(str);
+	if (ret == NULL)
+		err(1, "strdup");
+	return (ret);
 }

@@ -1,3 +1,5 @@
+-=-=-=-=-=-=-=
+
 sysfuzz is a program that attempts to perform fuzz testing of the FreeBSD
 kernel's system call interface. Naive fuzz testing of this interface wouldn't
 be very interesting: system calls with random input will fail parameter
@@ -11,6 +13,35 @@ a valid ptrace command for the first argument, and a valid PID for the second
 argument. During start-up, sysfuzz allocates various types of resources (e.g.
 sockets, child processes, kqueues) for use in system call parameter generation.
 
+Note that the paragraph above describes the vision for this program. At the
+moment, it fuzzes the system calls implemented by the virtual memory subsystem -
+mmap(2) and friends.
+
+-=-=-=-=-=-=-=-
+
+Some example usages are:
+
+$ sysfuzz
+
+  Run the fuzzer with default parameters. All implemented syscalls will be
+  fuzzed.
+
+$ sysfuzz -g vm
+
+  Only fuzz system calls in the "vm" system call group.
+
+$ sysfuzz -l vm
+
+  List the system calls in the "vm" system call group.
+
+$ sysfuzz -d
+
+  Print descriptions and default values of all tunable run-time parameters.
+
+$ sysfuzz -c mmap,munmap -x num-fuzzers=1
+
+  Fuzz the mmap(2) and munmap(2) system calls using a single fuzzer process.
+
 -=-=-=-=-=-=-=-
 
 Brag list. Here are fixes for bugs that I've found using sysfuzz:
@@ -23,3 +54,11 @@ http://svnweb.freebsd.org/base?view=revision&revision=265843
 
 r266780:
 http://svnweb.freebsd.org/base?view=revision&revision=266780
+
+r269134:
+http://svnweb.freebsd.org/base?view=revision&revision=269134
+
+r271716:
+https://svnweb.freebsd.org/base?view=revision&revision=271716
+
+-=-=-=-=-=-=-=

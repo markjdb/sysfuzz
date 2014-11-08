@@ -34,26 +34,26 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "options.h"
+#include "params.h"
 #include "syscall.h"
 #include "util.h"
 
 static void	init_defaults(void);
 
-static nvlist_t *g_options;
+static nvlist_t *g_params;
 static nvlist_t *g_descriptions;
 
 void
-options_init(char **args)
+params_init(char **args)
 {
 	uintmax_t num;
 	char *endptr, *name, *val;
 	int base;
 	bool flag;
 
-	g_options = nvlist_create(NV_FLAG_IGNORE_CASE);
+	g_params = nvlist_create(NV_FLAG_IGNORE_CASE);
 	g_descriptions = nvlist_create(NV_FLAG_IGNORE_CASE);
-	if (g_options == NULL || g_descriptions == NULL)
+	if (g_params == NULL || g_descriptions == NULL)
 		err(1, "nvlist_create failed");
 
 	init_defaults();
@@ -64,18 +64,18 @@ options_init(char **args)
 		if (val == NULL)
 			errx(1, "invalid name-value pair '%s'", *args);
 
-		if (!nvlist_exists(g_options, name))
+		if (!nvlist_exists(g_params, name))
 			errx(1, "non-existent option '%s'", name);
-		else if (nvlist_exists_bool(g_options, name)) {
+		else if (nvlist_exists_bool(g_params, name)) {
 			if (strcasecmp(val, "true") != 0 &&
 			    strcasecmp(val, "false") != 0)
 				errx(1,
 			    "invalid value '%s' for boolean option '%s'",
 				    val, name);
 			flag = strcasecmp(val, "true") == 0;
-			nvlist_free_bool(g_options, name);
-			nvlist_add_bool(g_options, name, flag);
-		} else if (nvlist_exists_number(g_options, name)) {
+			nvlist_free_bool(g_params, name);
+			nvlist_add_bool(g_params, name, flag);
+		} else if (nvlist_exists_number(g_params, name)) {
 			base = 10;
 			if (strlen(val) >= 2 && strcmp(val, "0x") == 0)
 				base = 16;
@@ -88,42 +88,42 @@ options_init(char **args)
 			else if (num > UINT64_MAX)
 				errx(1, "value '%s' for '%s' is out of range",
 				    val, name);
-			nvlist_free_number(g_options, name);
-			nvlist_add_number(g_options, name, (uint64_t)num);
-		} else if (nvlist_exists_string(g_options, name)) {
-			nvlist_free_string(g_options, name);
-			nvlist_add_string(g_options, name, val);
+			nvlist_free_number(g_params, name);
+			nvlist_add_number(g_params, name, (uint64_t)num);
+		} else if (nvlist_exists_string(g_params, name)) {
+			nvlist_free_string(g_params, name);
+			nvlist_add_string(g_params, name, val);
 		} else
 			errx(1, "unknown type for option '%s'", name);
 
-		if (nvlist_error(g_options) != 0)
+		if (nvlist_error(g_params) != 0)
 			errx(1, "couldn't set option '%s': %s", name,
-			    strerror(nvlist_error(g_options)));
+			    strerror(nvlist_error(g_params)));
 		free(*args);
 		args++;
 	}
 }
 
 void
-options_dump()
+params_dump()
 {
 	const char *name;
 	void *cookie;
 	int type;
 
 	cookie = NULL;
-	while ((name = nvlist_next(g_options, &type, &cookie)) != NULL) {
+	while ((name = nvlist_next(g_params, &type, &cookie)) != NULL) {
 		printf("%s: ", name);
 		switch (type) {
 		case NV_TYPE_BOOL:
-			printf("%s", nvlist_get_bool(g_options, name) ?
+			printf("%s", nvlist_get_bool(g_params, name) ?
 			    "true" : "false");
 			break;
 		case NV_TYPE_NUMBER:
-			printf("%ju", nvlist_get_number(g_options, name));
+			printf("%ju", nvlist_get_number(g_params, name));
 			break;
 		case NV_TYPE_STRING:
-			printf("%s", nvlist_get_string(g_options, name));
+			printf("%s", nvlist_get_string(g_params, name));
 			break;
 		default:
 			errx(1, "unexpected type '%d' for option '%s'", type,
@@ -134,30 +134,30 @@ options_dump()
 }
 
 bool
-option_flag(const char *name)
+param_flag(const char *name)
 {
 
-	if (!nvlist_exists_bool(g_options, name))
+	if (!nvlist_exists_bool(g_params, name))
 		errx(1, "invalid option '%s'", name);
-	return (nvlist_get_string(g_options, name));
+	return (nvlist_get_string(g_params, name));
 }
 
 uint64_t
-option_number(const char *name)
+param_number(const char *name)
 {
 
-	if (!nvlist_exists_number(g_options, name))
+	if (!nvlist_exists_number(g_params, name))
 		errx(1, "invalid option '%s'", name);
-	return (nvlist_get_number(g_options, name));
+	return (nvlist_get_number(g_params, name));
 }
 
 const char *
-option_string(const char *name)
+param_string(const char *name)
 {
 
-	if (!nvlist_exists_string(g_options, name))
+	if (!nvlist_exists_string(g_params, name))
 		errx(1, "invalid option '%s'", name);
-	return (nvlist_get_string(g_options, name));
+	return (nvlist_get_string(g_params, name));
 }
 
 static void
@@ -172,7 +172,7 @@ init_defaults()
 			uint64_t number;
 			bool flag;
 		};
-	} options[] = {
+	} params[] = {
 	{
 		.name = "memblk-page-count",
 		.description = "The total number of pages to map in memblks.",
@@ -185,27 +185,33 @@ init_defaults()
 		.type = NV_TYPE_NUMBER,
 		.number = 1024,
 	},
+	{
+		.name = "num-fuzzers",
+		.description = "The number of fuzzer processes to run.",
+		.type = NV_TYPE_NUMBER,
+		.number = ncpu(),
+	},
 	};
 
-	for (u_int i = 0; i < nitems(options); i++) {
-		switch (options[i].type) {
+	for (u_int i = 0; i < nitems(params); i++) {
+		switch (params[i].type) {
 		case NV_TYPE_BOOL:
-			nvlist_add_bool(g_options, options[i].name,
-			    options[i].flag);
+			nvlist_add_bool(g_params, params[i].name,
+			    params[i].flag);
 			break;
 		case NV_TYPE_NUMBER:
-			nvlist_add_number(g_options, options[i].name,
-			    options[i].number);
+			nvlist_add_number(g_params, params[i].name,
+			    params[i].number);
 			break;
 		case NV_TYPE_STRING:
-			nvlist_add_string(g_options, options[i].name,
-			    options[i].string);
+			nvlist_add_string(g_params, params[i].name,
+			    params[i].string);
 			break;
 		default:
-			errx(1, "invalid option type %d", options[i].type);
+			errx(1, "invalid option type %d", params[i].type);
 		}
 
-		nvlist_add_string(g_descriptions, options[i].name,
-		    options[i].description);
+		nvlist_add_string(g_descriptions, params[i].name,
+		    params[i].description);
 	}
 }

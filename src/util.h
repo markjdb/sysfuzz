@@ -29,5 +29,6 @@
 
 u_int	ncpu(void);
 u_int	pagecnt(void);
+char *	xstrdup(const char *);
 
 #endif

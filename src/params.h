@@ -24,16 +24,16 @@
  * SUCH DAMAGE.
  */
 
-#ifndef _OPTIONS_H_
-#define	_OPTIONS_H_
+#ifndef _PARAMS_H_
+#define	_PARAMS_H_
 
 #include <stdbool.h>
 
-void		options_init(char **);
-void		options_dump(void);
+void		params_init(char **);
+void		params_dump(void);
 
-bool		option_flag(const char *);
-uint64_t	option_number(const char *);
-const char	*option_string(const char *);
+bool		param_flag(const char *);
+uint64_t	param_number(const char *);
+const char	*param_string(const char *);
 
 #endif

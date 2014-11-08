@@ -26,9 +26,11 @@
 
 #include <sys/types.h>
 #include <sys/syscall.h>
+#include <sys/wait.h>
 
 #include <err.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <grp.h>
 #include <pwd.h>
 #include <stdio.h>
@@ -37,14 +39,16 @@
 #include <unistd.h>
 
 #include "argpool.h"
-#include "options.h"
+#include "params.h"
 #include "syscall.h"
+#include "util.h"
 
 struct sctable {
 	int		cnt;
 	struct scdesc	*scds[1];
 };
 
+/* Allocate a table of system call descriptors. */
 static struct sctable *
 sctable_alloc(char *sclist, char *scgrplist)
 {
@@ -88,12 +92,14 @@ sctable_alloc(char *sclist, char *scgrplist)
 	return (table);
 }
 
+/* List the members of the given system call group. */
 static void
-scgrp_list(const char *scgrp)
+scgroup_list(const char *scgrp)
 {
 	struct scdesc **desc;
 	enum scgroup group;
 
+	group = 0;
 	if (!scgroup_lookup(scgrp, &group))
 		errx(1, "unknown syscall group '%s'", scgrp);
 
@@ -143,15 +149,28 @@ scargs_alloc(u_long *args, struct scdesc *sd)
 }
 
 static void
-scloop(u_long ncalls, struct sctable *table)
+scloop(u_long ncalls, u_long seed, struct sctable *table)
 {
-	u_long args[SYSCALL_MAXARGS];
+	u_long args[SYSCALL_MAXARGS], ret, sofar;
 	struct scdesc *sd;
-	u_long ret, sofar;
+	u_int n;
+	int status;
 
-	fork();
+	printf("%s: seeding with %lu\n", getprogname(), seed);
 
-	/* XXX need to reseed. */
+	for (n = param_number("num-fuzzers"); n > 0; n--) {
+		pid_t pid = fork();
+		if (pid == -1)
+			err(1, "fork");
+		else if (pid == 0)
+			break;
+	}
+
+	if (n == 0) {
+		while (true)
+			wait(&status);
+	} else
+		srandom(seed + n);
 
 	for (sofar = 0; ncalls == 0 || sofar < ncalls; sofar++) {
 		sd = table->scds[random() % table->cnt];
@@ -167,6 +186,7 @@ scloop(u_long ncalls, struct sctable *table)
 	}
 }
 
+/* If we're root, drop privileges. */
 static void
 drop_privs()
 {
@@ -193,6 +213,27 @@ drop_privs()
 		err(1, "setuid");
 }
 
+static u_long
+pickseed(void)
+{
+	const char *path = "/dev/urandom";
+	u_long seed;
+	ssize_t bytes;
+	int fd;
+
+	fd = open(path, O_RDONLY);
+	if (fd < 0)
+		err(1, "opening %s", path);
+
+	bytes = read(fd, &seed, sizeof(seed));
+	if (bytes < 0)
+		err(1, "reading from %s", path);
+	else if (bytes != sizeof(seed))
+		errx(1, "short read from %s (got %zd bytes)", path, bytes);
+
+	return (seed);
+}
+
 static void
 usage()
 {
@@ -200,8 +241,8 @@ usage()
 
 	fprintf(stderr,
 	    "Usage:\t%s [-n count] [-p] [-c <syscall1>[,<syscall2>[,...]]]\n"
-	    "\t    -g <scgroup1>[,<scgroup2>[,...]]\n"
-	    "\t    -x <param>[=<value>]\n", pn);
+	    "\t    [-g <scgroup1>[,<scgroup2>[,...]]]\n"
+	    "\t    [-s <seed>] [-x <param>[=<value>]]\n", pn);
 	fprintf(stderr, "\t%s -d\n", pn);
 	fprintf(stderr, "\t%s -l <scgroup>\n", pn);
 	exit(1);
@@ -210,35 +251,33 @@ usage()
 int
 main(int argc, char **argv)
 {
-	char **option, **options;
+	char **param, **params;
 	char *end, *scgrp, *sclist, *scgrplist;
-	u_long ncalls;
-	bool dropprivs = true, dumpopts = false;
+	u_long ncalls, seed;
+	bool dropprivs = true, dumpparams = false;
 	int ch;
 
-	options = calloc(argc + 1, sizeof(*options));
-	if (options == NULL)
+	params = calloc(argc + 1, sizeof(*params));
+	if (params == NULL)
 		err(1, "calloc");
-	option = options;
+	param = params;
+
+	seed = pickseed();
 
 	scgrp = sclist = scgrplist = NULL;
-	while ((ch = getopt(argc, argv, "c:dg:l:n:px:")) != -1)
+	while ((ch = getopt(argc, argv, "c:dg:l:n:ps:x:")) != -1)
 		switch (ch) {
 		case 'c':
-			sclist = strdup(optarg);
-			if (sclist == NULL)
-				err(1, "strdup failed");
+			sclist = xstrdup(optarg);
 			break;
 		case 'd':
-			dumpopts = true;
+			dumpparams = true;
 			break;
 		case 'g':
-			scgrplist = strdup(optarg);
-			if (scgrplist == NULL)
-				err(1, "strdup failed");
+			scgrplist = xstrdup(optarg);
 			break;
 		case 'l':
-			scgrp = strdup(optarg);
+			scgrp = xstrdup(optarg);
 			break;
 		case 'n':
 			errno = 0;
@@ -249,9 +288,14 @@ main(int argc, char **argv)
 		case 'p':
 			dropprivs = false;
 			break;
+		case 's':
+			errno = 0;
+			seed = strtoul(optarg, &end, 10);
+			if (optarg[0] == '\0' || *end != '\0' || errno != 0)
+				errx(1, "invalid parameter '%s' for -s", optarg);
+			break;
 		case 'x':
-			*option = strdup(optarg);
-			option++;
+			*param++ = strdup(optarg);
 			break;
 		case '?':
 			usage();
@@ -259,21 +303,21 @@ main(int argc, char **argv)
 		}
 
 	/* Initialize runtime parameters. */
-	options_init(options);
-	free(options);
+	params_init(params);
+	free(params);
+
+	if (dumpparams) {
+		if (argc != 2)
+			usage();
+		params_dump();
+		return (0);
+	}
 
 	if (scgrp != NULL) {
 		if (argc != 3)
 			usage();
-		scgrp_list(scgrp);
+		scgroup_list(scgrp);
 		free(scgrp);
-		return (0);
-	}
-
-	if (dumpopts) {
-		if (argc != 2)
-			usage();
-		options_dump();
 		return (0);
 	}
 
@@ -287,7 +331,7 @@ main(int argc, char **argv)
 	if (dropprivs)
 		drop_privs();
 
-	scloop(ncalls, sctable_alloc(sclist, scgrplist));
+	scloop(ncalls, seed, sctable_alloc(sclist, scgrplist));
 
 	free(sclist);
 	free(scgrplist);
