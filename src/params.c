@@ -165,7 +165,7 @@ init_defaults()
 {
 	struct {
 		const char *name;
-		const char *description;
+		const char *descr;
 		int type;
 		union {
 			const char *string;
@@ -175,19 +175,19 @@ init_defaults()
 	} params[] = {
 	{
 		.name = "memblk-page-count",
-		.description = "The total number of pages to map in memblks.",
+		.descr = "The total number of pages to map in memblks.",
 		.type = NV_TYPE_NUMBER,
 		.number = pagecnt() / (ncpu() * 4),
 	},
 	{
 		.name = "memblk-max-size",
-		.description = "The maximum number of pages in a memblk.",
+		.descr = "The maximum number of pages in a memblk.",
 		.type = NV_TYPE_NUMBER,
 		.number = 1024,
 	},
 	{
 		.name = "num-fuzzers",
-		.description = "The number of fuzzer processes to run.",
+		.descr = "The number of fuzzer processes to run.",
 		.type = NV_TYPE_NUMBER,
 		.number = ncpu(),
 	},
@@ -212,6 +212,6 @@ init_defaults()
 		}
 
 		nvlist_add_string(g_descriptions, params[i].name,
-		    params[i].description);
+		    params[i].descr);
 	}
 }
