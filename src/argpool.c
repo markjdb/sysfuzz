@@ -143,9 +143,10 @@ ap_memblk_reclaim(struct arg_memblk *memblk)
 	if (argpool.umblkcnt == 0)
 		return (1);
 
+	argpool.umblkcnt--;
 	memblk->addr = argpool.umblks[argpool.umblkcnt].addr;
 	memblk->len = argpool.umblks[argpool.umblkcnt].len;
-	argpool.umblkcnt--;
+
 	return (0);
 }
 
