@@ -251,6 +251,7 @@ usage()
 int
 main(int argc, char **argv)
 {
+	struct sctable *table;
 	char **param, **params;
 	char *end, *scgrp, *sclist, *scgrplist;
 	u_long ncalls, seed;
@@ -321,6 +322,11 @@ main(int argc, char **argv)
 		return (0);
 	}
 
+	/* Initialize system call descriptors for the calls we'll be fuzzing. */
+	table = sctable_alloc(sclist, scgrplist);
+	free(sclist);
+	free(scgrplist);
+
 	/* Create input pools for system calls. */
 	ap_init();
 
@@ -331,10 +337,9 @@ main(int argc, char **argv)
 	if (dropprivs)
 		drop_privs();
 
-	scloop(ncalls, seed, sctable_alloc(sclist, scgrplist));
+	scloop(ncalls, seed, table);
 
-	free(sclist);
-	free(scgrplist);
+	free(table);
 
 	return (0);
 }
