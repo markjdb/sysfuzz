@@ -123,7 +123,7 @@ ap_memblk_unmap(const struct arg_memblk *memblk)
 {
 
 	/* We don't have space in the table, so indicate failure. */
-	if (argpool.umblkcnt == argpool.umblkcntmax)
+	if (argpool.umblkcnt == argpool.umblkcntmax - 1)
 		return (1);
 
 	argpool.umblks[argpool.umblkcnt].addr = memblk->addr;
