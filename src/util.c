@@ -24,7 +24,7 @@
  * SUCH DAMAGE.
  */
 
-#include <sys/types.h>
+#include <sys/param.h>
 #include <sys/sysctl.h>
 
 #include <err.h>
@@ -32,6 +32,23 @@
 #include <string.h>
 
 #include "util.h"
+
+/*
+ * Generate a random filename. buf should be a buffer of size at least NAME_MAX.
+ */
+void
+randfile(char *buf)
+{
+	size_t len;
+
+	len = (random() % (NAME_MAX - 1)) + 1;
+	arc4random_buf(buf, len);
+	buf[len] = '\0';
+	/* Hide illegal characters. */
+	for (u_int i = 0; i < len; i++)
+		if (buf[i] == '/' || buf[i] == '\0')
+			buf[i] = 'm';
+}
 
 u_int
 ncpu()

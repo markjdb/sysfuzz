@@ -40,6 +40,7 @@ SET_DECLARE(syscalls, struct scdesc);
 enum scargtype {
 	ARG_UNSPEC,
 	ARG_FD,
+	ARG_DIRFD,
 	ARG_PATH,
 	ARG_SOCKET,
 	ARG_MEMADDR,
@@ -73,6 +74,7 @@ enum scgroup {
 	SC_GROUP_VM =		(1 << 0),
 	SC_GROUP_SCHED =	(1 << 1),
 	SC_GROUP_FORK =		(1 << 2),
+	SC_GROUP_FILEIO =	(1 << 3),
 };
 
 #define	SYSCALL_MAXARGS	8

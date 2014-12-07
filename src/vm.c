@@ -29,9 +29,11 @@
 
 #include <err.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "argpool.h"
+#include "params.h"
 #include "syscall.h"
 
 /*
@@ -116,15 +118,24 @@ void
 mmap_fixup(u_long *args)
 {
 	struct arg_memblk memblk;
+	uint64_t fsize;
 
-	if (ap_memblk_reclaim(&memblk) == 0) {
+	if (arc4random() % 2 == 0 && ap_memblk_reclaim(&memblk) == 0) {
+		/* Try to remap a previously unmapped block. */
 		args[0] = (u_long)(uintptr_t)memblk.addr;
 		args[1] = memblk.len;
-		args[3] &= ~(MAP_ALIGNED_SUPER | MAP_STACK | MAP_HASSEMAPHORE);
 		args[3] |= MAP_ANON;
-		args[4] = (u_long)-1; /* XXX */
+		args[4] = (u_long)-1;
 		args[5] = 0;
+	} else {
+		fsize = param_number("hier-max-fsize");
+		args[0] = 0;
+		args[1] = arc4random() % fsize;
+		args[3] = MAP_PRIVATE;
+		args[5] = arc4random() % fsize;
 	}
+
+	args[3] &= ~(MAP_ALIGNED_SUPER | MAP_STACK | MAP_HASSEMAPHORE); /* XXX why? */
 }
 
 void
@@ -134,15 +145,21 @@ mmap_cleanup(u_long *args, u_long ret)
 	void *addr;
 
 	addr = (void *)(uintptr_t)ret;
-	if (addr == NULL && (int)args[4] == -1) {
-		memblk.addr = addr;
-		memblk.len = args[1];
-		ap_memblk_unmap(&memblk);
-	} else if (addr != (void *)(uintptr_t)args[0])
-		/*
-		 * If we didn't get memory at the location requested, free it.
-		 */
-		(void)munmap(addr, args[1]);
+	if (args[4] == (u_long)-1) {
+		if (addr == NULL) {
+			memblk.addr = addr;
+			memblk.len = args[1];
+			ap_memblk_unmap(&memblk);
+		} else if (addr != (void *)(uintptr_t)args[0]) {
+			/*
+			 * If we didn't get memory at the location requested,
+			 * free it.
+			 */
+			(void)munmap(addr, (size_t)args[1]);
+		}
+	} else if (addr != NULL)
+		/* XXX we must add this to the memblk pool. */
+		(void)munmap(addr, (size_t)args[1]);
 }
 
 static int madvise_cmds[] =
@@ -394,7 +411,7 @@ munmap_cleanup(u_long *args, u_long ret)
 		return;
 
 	/* Inform the argpool layer that we've unmapped this block. */
-	memblk.addr = (void *)args[0];
+	memblk.addr = (void *)(uintptr_t)args[0];
 	memblk.len = args[1];
 	(void)ap_memblk_unmap(&memblk);
 }

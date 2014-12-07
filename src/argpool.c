@@ -24,10 +24,12 @@
  * SUCH DAMAGE.
  */
 
-#include <sys/types.h>
+#include <sys/param.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
 
 #include <err.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -37,17 +39,25 @@
 #include "util.h"
 
 static struct {
-	/* Blocks mmap(2)ed during initialization. */
+	/* mmap(2)'ed blocks. */
 	struct arg_memblk	*memblks;
 	int			memblkcnt;
 	/* Blocks unmmaped while fuzzing. */
 	struct arg_memblk	*umblks;
 	int			umblkcnt;
 	int			umblkcntmax;
+	/* File descriptors. */
+	int			*fds;
+	int			fdcnt;
+	int			fdcntmax;
 } argpool;
 
+static void	hier_init(const char *, int);
+static void	hier_extend(int, int);
+static void	memblk_init();
+
 static void
-memblk_init()
+memblk_init(void)
 {
 	void *addr;
 	size_t len;
@@ -150,9 +160,148 @@ ap_memblk_reclaim(struct arg_memblk *memblk)
 	return (0);
 }
 
+/*
+ * Create a random file hierarchy rooted at the specified path.
+ *
+ * The size of the resulting file hierarchy is bounded by four parameters:
+ * hier-depth, hier-max-fsize, hier-max-files-per-dir, and
+ * hier-max-subdirs-per-dir. Indeed, if we refer to these four values by
+ * n, s, f, and m respectively, the bound is given by
+ *
+ *     f * s * (m^{n+1} - 1) / (m - 1).
+ *
+ * This does not include the sizes of the directories themselves, which may
+ * become significant for large f and n.
+ *
+ * The default values give a very rough bound of 4GB. In practice, the
+ * hierarchy will be somewhat smaller.
+ *
+ * XXX we need to have some symlinks and hard links.
+ */
+static void
+hier_init(const char *path, int depth)
+{
+	struct stat sb;
+	int fd;
+
+	if (stat(path, &sb) == 0) {
+		if (!S_ISDIR(sb.st_mode))
+			errx(1, "path '%s' exists and isn't a directory", path);
+	} else if (mkdir(path, 0777) != 0)
+		err(1, "couldn't create '%s'", path);
+
+	fd = open(path, O_DIRECTORY | O_RDONLY);
+	if (fd < 0)
+		err(1, "opening '%s'", path);
+	hier_extend(fd, depth);
+	(void)close(fd);
+}
+
+static void
+hier_extend(int dirfd, int depth)
+{
+	char buf[16384], file[NAME_MAX];
+	ssize_t nbytes;
+	u_int fsize;
+	int fd, numfiles;
+
+	memset(buf, 0, sizeof(buf));
+
+	numfiles = (random() % param_number("hier-max-files-per-dir")) + 1;
+
+	/* Create files. */
+	for (int i = 0; i < numfiles; i++) {
+		randfile(file);
+		fd = openat(dirfd, file, O_CREAT | O_RDWR, 0666);
+		if (fd < 0)
+			err(1, "opening '%s'", file);
+
+		fsize = random() % param_number("hier-max-fsize");
+		while (fsize > 0) {
+			nbytes = write(fd, buf,
+			    fsize > sizeof(buf) ? sizeof(buf) : fsize);
+			if (nbytes < 0)
+				err(1, "writing to '%s'", file);
+			fsize -= nbytes;
+		}
+		ap_fd_add(fd);
+	}
+
+	if (depth <= 1)
+		return;
+
+	numfiles = (random() % param_number("hier-max-subdirs-per-dir")) + 1;
+
+	/* Create subdirs. */
+	for (int i = 0; i < numfiles; i++) {
+		randfile(file);
+		if (mkdirat(dirfd, file, 0777) != 0)
+			err(1, "creating directory '%s'", file);
+		fd = openat(dirfd, file, O_DIRECTORY | O_RDONLY);
+		if (fd < 0)
+			err(1, "opening directory '%s'", file);
+		hier_extend(fd, depth - 1);
+		ap_fd_add(fd);
+	}
+}
+
+static void
+fd_init(void)
+{
+
+	argpool.fdcnt = 0;
+	argpool.fdcntmax = 128;
+	argpool.fds = malloc(argpool.fdcntmax * sizeof(int));
+	if (argpool.fds == NULL)
+		err(1, "malloc");
+}
+
+/*
+ * Add the specified file descriptor to the pool.
+ */
 void
-ap_init()
+ap_fd_add(int fd)
+{
+
+	if (argpool.fdcnt == argpool.fdcntmax) {
+		argpool.fdcntmax *= 2;
+		argpool.fds = realloc(argpool.fds,
+		    argpool.fdcntmax * sizeof(int));
+		if (argpool.fds == NULL)
+			err(1, "realloc");
+	}
+	argpool.fds[argpool.fdcnt++] = fd;
+}
+
+/*
+ * Indicate that the specified FD has been closed and is no longer valid.
+ */
+void
+ap_fd_close(int fd __unused)
+{
+
+}
+
+/*
+ * Randomly pick an FD from the pool.
+ */
+int
+ap_fd_random(void)
+{
+
+	if (argpool.fdcnt == 0)
+		return (-1);
+	return (argpool.fds[arc4random() % argpool.fdcnt]);
+}
+
+/*
+ * Initialize the argument pool.
+ */
+void
+ap_init(void)
 {
 
 	memblk_init();
+	fd_init();
+	hier_init(param_string("hier-root"), param_number("hier-depth"));
 }

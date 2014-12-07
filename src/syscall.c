@@ -35,6 +35,7 @@ static struct {
 	{ SC_GROUP_VM, "vm" },
 	{ SC_GROUP_SCHED, "sched" },
 	{ SC_GROUP_FORK, "fork" },
+	{ SC_GROUP_FILEIO, "fileio" },
 };
 
 /* Determine whether to fuzz the given system call. */

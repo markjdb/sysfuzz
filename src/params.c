@@ -163,6 +163,12 @@ param_string(const char *name)
 static void
 init_defaults()
 {
+	char tmppath[PATH_MAX];
+
+	snprintf(tmppath, sizeof(tmppath), "%s", "/tmp/sysfuzz.XXXXXX");
+	if (mkdtemp(tmppath) == NULL)
+		err(1, "mkdtemp");
+
 	struct {
 		const char *name;
 		const char *descr;
@@ -173,6 +179,36 @@ init_defaults()
 			bool flag;
 		};
 	} params[] = {
+	{
+		.name = "hier-depth",
+		.descr = "Maximum file hierarchy depth.",
+		.type = NV_TYPE_NUMBER,
+		.number = 4,
+	},
+	{
+		.name = "hier-max-fsize",
+		.descr = "Maximum file size for random file creation.",
+		.type = NV_TYPE_NUMBER,
+		.number = (1024 * 1024),
+	},
+	{
+		.name = "hier-max-files-per-dir",
+		.descr = "Maximum number of random files per directory.",
+		.type = NV_TYPE_NUMBER,
+		.number = 10,
+	},
+	{
+		.name = "hier-max-subdirs-per-dir",
+		.descr = "Maximum number of subdirectories per directory.",
+		.type = NV_TYPE_NUMBER,
+		.number = 7,
+	},
+	{
+		.name = "hier-root",
+		.descr = "The root directory for a random file hierarchy.",
+		.type = NV_TYPE_STRING,
+		.string = tmppath,
+	},
 	{
 		.name = "memblk-page-count",
 		.descr = "The total number of pages to map in memblks.",

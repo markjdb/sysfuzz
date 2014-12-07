@@ -29,6 +29,7 @@
 
 u_int	ncpu(void);
 u_int	pagecnt(void);
+void	randfile(char *);
 char *	xstrdup(const char *);
 
 #endif

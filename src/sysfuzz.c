@@ -141,6 +141,9 @@ scargs_alloc(u_long *args, struct scdesc *sd)
 				args[i] |=
 				    sd->sd_args[i].sa_iflags[random() % argcnt];
 			break;
+		case ARG_FD:
+			args[i] = ap_fd_random();
+			break;
 		default:
 			args[i] = 0;
 			break;
