@@ -46,16 +46,14 @@ void	mincore_fixup(u_long *);
 void	mincore_cleanup(u_long *, u_long);
 void	munmap_cleanup(u_long *, u_long);
 
-static int mmap_prot_flags[] =
-{
+static int mmap_prot_flags[] = {
 	PROT_NONE,
 	PROT_READ,
 	PROT_WRITE,
 	PROT_EXEC,
 };
 
-static int mmap_flags[] =
-{
+static int mmap_flags[] = {
 	MAP_32BIT,
 	MAP_ALIGNED_SUPER,
 	MAP_ANON,
@@ -70,16 +68,14 @@ static int mmap_flags[] =
 	MAP_EXCL,
 };
 
-static struct scdesc mmap_desc =
-{
+static struct scdesc mmap_desc = {
 	.sd_num = SYS_mmap,
 	.sd_name = "mmap",
 	.sd_nargs = 6,
 	.sd_groups = SC_GROUP_VM,
 	.sd_fixup = mmap_fixup,
 	.sd_cleanup = mmap_cleanup,
-	.sd_args =
-	{
+	.sd_args = {
 		{
 			.sa_type = ARG_UNSPEC,
 			.sa_name = "addr",
@@ -162,8 +158,7 @@ mmap_cleanup(u_long *args, u_long ret)
 		(void)munmap(addr, (size_t)args[1]);
 }
 
-static int madvise_cmds[] =
-{
+static int madvise_cmds[] = {
 	MADV_NORMAL,
 	MADV_RANDOM,
 	MADV_SEQUENTIAL,
@@ -177,14 +172,12 @@ static int madvise_cmds[] =
 	MADV_PROTECT,
 };
 
-static struct scdesc madvise_desc =
-{
+static struct scdesc madvise_desc = {
 	.sd_num = SYS_madvise,
 	.sd_name = "madvise",
 	.sd_nargs = 3,
 	.sd_groups = SC_GROUP_VM,
-	.sd_args =
-	{
+	.sd_args = {
 		{
 			.sa_type = ARG_MEMADDR,
 			.sa_name = "addr",
@@ -203,16 +196,14 @@ static struct scdesc madvise_desc =
 };
 SYSCALL_ADD(madvise_desc);
 
-static struct scdesc mincore_desc =
-{
+static struct scdesc mincore_desc = {
 	.sd_num = SYS_mincore,
 	.sd_name = "mincore",
 	.sd_nargs = 3,
 	.sd_groups = SC_GROUP_VM,
 	.sd_fixup = mincore_fixup,
 	.sd_cleanup = mincore_cleanup,
-	.sd_args =
-	{
+	.sd_args = {
 		{
 			.sa_type = ARG_MEMADDR,
 			.sa_name = "addr",
@@ -248,21 +239,18 @@ mincore_cleanup(u_long *args, u_long ret __unused)
 	free((void *)args[2]);
 }
 
-static int minherit_cmds[] =
-{
+static int minherit_cmds[] = {
 	INHERIT_SHARE,
 	INHERIT_NONE,
 	INHERIT_COPY,
 };
 
-static struct scdesc minherit_desc =
-{
+static struct scdesc minherit_desc = {
 	.sd_num = SYS_minherit,
 	.sd_name = "minherit",
 	.sd_nargs = 3,
 	.sd_groups = SC_GROUP_VM,
-	.sd_args =
-	{
+	.sd_args = {
 		{
 			.sa_type = ARG_MEMADDR,
 			.sa_name = "addr",
@@ -281,14 +269,12 @@ static struct scdesc minherit_desc =
 };
 SYSCALL_ADD(minherit_desc);
 
-static struct scdesc mlock_desc =
-{
+static struct scdesc mlock_desc = {
 	.sd_num = SYS_mlock,
 	.sd_name = "mlock",
 	.sd_nargs = 2,
 	.sd_groups = SC_GROUP_VM,
-	.sd_args =
-	{
+	.sd_args = {
 		{
 			.sa_type = ARG_MEMADDR,
 			.sa_name = "addr",
@@ -301,14 +287,12 @@ static struct scdesc mlock_desc =
 };
 SYSCALL_ADD(mlock_desc);
 
-static struct scdesc mprotect_desc =
-{
+static struct scdesc mprotect_desc = {
 	.sd_num = SYS_mprotect,
 	.sd_name = "mprotect",
 	.sd_nargs = 3,
 	.sd_groups = SC_GROUP_VM,
-	.sd_args =
-	{
+	.sd_args = {
 		{
 			.sa_type = ARG_MEMADDR,
 			.sa_name = "addr",
@@ -327,21 +311,18 @@ static struct scdesc mprotect_desc =
 };
 SYSCALL_ADD(mprotect_desc);
 
-static int msync_cmds[] =
-{
+static int msync_cmds[] = {
 	MS_ASYNC,
 	MS_SYNC,
 	MS_INVALIDATE,
 };
 
-static struct scdesc msync_desc =
-{
+static struct scdesc msync_desc = {
 	.sd_num = SYS_msync,
 	.sd_name = "msync",
 	.sd_nargs = 3,
 	.sd_groups = SC_GROUP_VM,
-	.sd_args =
-	{
+	.sd_args = {
 		{
 			.sa_type = ARG_MEMADDR,
 			.sa_name = "addr",
@@ -360,14 +341,12 @@ static struct scdesc msync_desc =
 };
 SYSCALL_ADD(msync_desc);
 
-static struct scdesc munlock_desc =
-{
+static struct scdesc munlock_desc = {
 	.sd_num = SYS_munlock,
 	.sd_name = "munlock",
 	.sd_nargs = 2,
 	.sd_groups = SC_GROUP_VM,
-	.sd_args =
-	{
+	.sd_args = {
 		{
 			.sa_type = ARG_MEMADDR,
 			.sa_name = "addr",
@@ -380,15 +359,13 @@ static struct scdesc munlock_desc =
 };
 SYSCALL_ADD(munlock_desc);
 
-static struct scdesc munmap_desc =
-{
+static struct scdesc munmap_desc = {
 	.sd_num = SYS_munmap,
 	.sd_name = "munmap",
 	.sd_nargs = 2,
 	.sd_groups = SC_GROUP_VM,
 	.sd_cleanup = munmap_cleanup,
-	.sd_args =
-	{
+	.sd_args = {
 		{
 			.sa_type = ARG_MEMADDR,
 			.sa_name = "addr",
@@ -416,20 +393,17 @@ munmap_cleanup(u_long *args, u_long ret)
 	(void)ap_memblk_unmap(&memblk);
 }
 
-static int mlockall_flags[] =
-{
+static int mlockall_flags[] = {
 	MCL_CURRENT,
 	MCL_FUTURE,
 };
 
-static struct scdesc mlockall_desc =
-{
+static struct scdesc mlockall_desc = {
 	.sd_num = SYS_mlockall,
 	.sd_name = "mlockall",
 	.sd_nargs = 1,
 	.sd_groups = SC_GROUP_VM,
-	.sd_args =
-	{
+	.sd_args = {
 		{
 			.sa_type = ARG_IFLAGMASK,
 			.sa_name = "flags",
@@ -440,8 +414,7 @@ static struct scdesc mlockall_desc =
 };
 SYSCALL_ADD(mlockall_desc);
 
-static struct scdesc munlockall_desc =
-{
+static struct scdesc munlockall_desc = {
 	.sd_num = SYS_munlockall,
 	.sd_name = "munlockall",
 	.sd_nargs = 0,
