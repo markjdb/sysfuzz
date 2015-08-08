@@ -25,12 +25,12 @@
  */
 
 #include <sys/param.h>
+#include <sys/nv.h>
 
 #include <err.h>
 #include <errno.h>
 #include <inttypes.h>
 #include <limits.h>
-#include <nv.h>
 #include <stdlib.h>
 #include <string.h>
 
