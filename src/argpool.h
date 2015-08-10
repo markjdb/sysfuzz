@@ -36,11 +36,15 @@ struct arg_memblk {
 
 void	ap_init(void);
 
+void	ap_dirfd_add(int);
+void	ap_dirfd_close(int);
+int	ap_dirfd_random(void);
 void	ap_fd_add(int);
 void	ap_fd_close(int);
 int	ap_fd_random(void);
-void	ap_memblk_random(struct arg_memblk *);
+void	ap_memblk_add(void *, size_t);
+int	ap_memblk_random(struct arg_memblk *);
 int	ap_memblk_reclaim(struct arg_memblk *);
-int	ap_memblk_unmap(const struct arg_memblk *);
+void	ap_memblk_unmap(const struct arg_memblk *);
 
 #endif /* _ARGPOOL_H_ */

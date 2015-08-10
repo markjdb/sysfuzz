@@ -157,7 +157,7 @@ scloop(u_long ncalls, u_long seed, struct sctable *table)
 	u_long args[SYSCALL_MAXARGS], ret, sofar;
 	struct scdesc *sd;
 	u_int n;
-	int status;
+	int status, toreap;
 
 	printf("%s: seeding with %lu\n", getprogname(), seed);
 
@@ -170,8 +170,12 @@ scloop(u_long ncalls, u_long seed, struct sctable *table)
 	}
 
 	if (n == 0) {
-		while (true)
-			wait(&status);
+		toreap = param_number("num-fuzzers");
+		while (toreap > 0) {
+			if (wait(&status) != -1)
+				toreap--;
+		}
+		return;
 	} else
 		srandom(seed + n);
 
@@ -330,7 +334,7 @@ main(int argc, char **argv)
 	free(sclist);
 	free(scgrplist);
 
-	/* Create input pools for system calls. */
+	/* Create argument pools for system calls. */
 	ap_init();
 
 	/*

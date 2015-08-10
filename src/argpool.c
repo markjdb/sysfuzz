@@ -26,8 +26,10 @@
 
 #include <sys/param.h>
 #include <sys/mman.h>
+#include <sys/queue.h>
 #include <sys/stat.h>
 
+#include <assert.h>
 #include <err.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -36,127 +38,93 @@
 
 #include "argpool.h"
 #include "params.h"
+#include "rman.h"
 #include "util.h"
 
-static struct {
-	/* mmap(2)'ed blocks. */
-	struct arg_memblk	*memblks;
-	int			memblkcnt;
-	/* Blocks unmmaped while fuzzing. */
-	struct arg_memblk	*umblks;
-	int			umblkcnt;
-	int			umblkcntmax;
-	/* File descriptors. */
-	int			*fds;
-	int			fdcnt;
-	int			fdcntmax;
-} argpool;
+static struct rman dirfds;
+static struct rman fds;
+static struct rman memblks;
+static struct rman unmapped;
 
 static void	hier_init(const char *, int);
 static void	hier_extend(int, int);
-static void	memblk_init();
+static int	memblk_init(struct rman *);
 
-static void
-memblk_init(void)
+static int
+memblk_init(struct rman *rman __unused)
 {
 	void *addr;
 	size_t len;
 	u_int pgcnt;
-	int allocs;
-
-	memset(&argpool, 0, sizeof(argpool));
 
 	pgcnt = param_number("memblk-page-count");
-	allocs = 32;
-	argpool.memblks = malloc(sizeof(*argpool.memblks) * allocs);
-	if (argpool.memblks == NULL)
-		err(1, "malloc");
 	while (pgcnt > 0) {
-		if (argpool.memblkcnt == allocs) {
-			allocs *= 2;
-			argpool.memblks = realloc(argpool.memblks,
-			    sizeof(*argpool.memblks) * allocs);
-			if (argpool.memblks == NULL)
-				err(1, "realloc");
-		}
-
-		/* Allow up to memblk-max-size pages in a memory block. */
-		len = random() % param_number("memblk-max-size");
+		/*
+		 * Allow up to memblk-max-size pages in a memory block, clamp to
+		 * pgcnt.
+		 */
+		len = (random() % param_number("memblk-max-size")) + 1;
 		if (len > pgcnt)
 			len = pgcnt;
 		pgcnt -= len;
 		len *= getpagesize();
 
-		addr = mmap(NULL, len, PROT_READ | PROT_WRITE | PROT_EXEC,
-		    MAP_ANON, -1, 0);
+		addr = mmap(NULL, len, PROT_READ | PROT_WRITE, MAP_ANON, -1, 0);
 		if (addr == NULL)
-			err(1, "mapping %zu bytes", len);
-		memset(addr, 0, len); /* XXX perhaps we should omit this occasionally. */
+			err(1, "mmap");
+		if (random() % 2 == 0)
+			memset(addr, 0, len);
 
-		argpool.memblks[argpool.memblkcnt].addr = addr;
-		argpool.memblks[argpool.memblkcnt].len = len;
-		argpool.memblkcnt++;
+		ap_memblk_add(addr, len);
 	}
+	return (0);
+}
 
-	/* Save some space to record blocks unmapped by munmap(2). */
-	argpool.umblkcntmax = allocs * 4;
-	argpool.umblks = calloc(argpool.umblkcntmax, sizeof(*argpool.umblks));
-	if (argpool.umblks == NULL)
-		err(1, "calloc");
+void
+ap_memblk_add(void *addr, size_t len)
+{
+
+	rman_add(&memblks, (uintptr_t)addr, len);
 }
 
 /*
  * Randomly pick a memory block from the pool.
  */
-void
+int
 ap_memblk_random(struct arg_memblk *memblk)
 {
-	struct arg_memblk *randblk;
-	size_t pages, rpages;
-	u_int ps;
+	u_long start, len;
 
-	ps = getpagesize();
-	randblk = &argpool.memblks[random() % argpool.memblkcnt];
-	pages = randblk->len / ps;
-	rpages = random() % (pages + 1);
-
-	memblk->addr = (void *)((uintptr_t)randblk->addr +
-	    ps * (random() % (pages - rpages + 1)));
-	memblk->len = rpages * ps;
+	if (rman_select(&memblks, &start, &len, 0))
+		return (1);
+	memblk->addr = (void *)(uintptr_t)start;
+	memblk->len = len;
+	return (0);
 }
 
 /*
  * Add a record indicating that the specified block has been unmapped.
  */
-int
+void
 ap_memblk_unmap(const struct arg_memblk *memblk)
 {
 
-	/* We don't have space in the table, so indicate failure. */
-	if (argpool.umblkcnt == argpool.umblkcntmax - 1)
-		return (1);
-
-	argpool.umblks[argpool.umblkcnt].addr = memblk->addr;
-	argpool.umblks[argpool.umblkcnt].len = memblk->len;
-	argpool.umblkcnt++;
-	return (0);
+	rman_release(&memblks, (uintptr_t)memblk->addr, memblk->len);
+	rman_add(&unmapped, (uintptr_t)memblk->addr, memblk->len);
 }
 
 /*
  * Attempt to obtain a memblk that has been recorded as unmapped.
- * XXX pick blocks randomly rather than FILO.
  */
 int
 ap_memblk_reclaim(struct arg_memblk *memblk)
 {
+	u_long start, len;
 
-	if (argpool.umblkcnt == 0)
+	if (rman_select(&unmapped, &start, &len, 0))
 		return (1);
-
-	argpool.umblkcnt--;
-	memblk->addr = argpool.umblks[argpool.umblkcnt].addr;
-	memblk->len = argpool.umblks[argpool.umblkcnt].len;
-
+	memblk->addr = (void *)(uintptr_t)start;
+	memblk->len = len;
 	return (0);
 }
 
@@ -241,57 +209,74 @@ hier_extend(int dirfd, int depth)
 		if (fd < 0)
 			err(1, "opening directory '%s'", file);
 		hier_extend(fd, depth - 1);
-		ap_fd_add(fd);
+		ap_dirfd_add(fd);
 	}
 }
 
 static void
-fd_init(void)
+descpool_add(struct rman *rman, int fd)
 {
 
-	argpool.fdcnt = 0;
-	argpool.fdcntmax = 128;
-	argpool.fds = malloc(argpool.fdcntmax * sizeof(int));
-	if (argpool.fds == NULL)
-		err(1, "malloc");
+	rman_add(rman, fd, 1);
 }
 
-/*
- * Add the specified file descriptor to the pool.
- */
+static void
+descpool_release(struct rman *rman, int fd)
+{
+
+	rman_release(rman, fd, 1);
+}
+
+static int
+descpool_select(struct rman *rman)
+{
+	u_long start, len;
+
+	rman_select(rman, &start, &len, 1);
+	assert(len == 1);
+	return ((int)start);
+}
+
 void
 ap_fd_add(int fd)
 {
 
-	if (argpool.fdcnt == argpool.fdcntmax) {
-		argpool.fdcntmax *= 2;
-		argpool.fds = realloc(argpool.fds,
-		    argpool.fdcntmax * sizeof(int));
-		if (argpool.fds == NULL)
-			err(1, "realloc");
-	}
-	argpool.fds[argpool.fdcnt++] = fd;
+	descpool_add(&fds, fd);
 }
 
-/*
- * Indicate that the specified FD has been closed and is no longer valid.
- */
 void
-ap_fd_close(int fd __unused)
+ap_fd_close(int fd)
 {
 
+	descpool_release(&fds, fd);
 }
 
-/*
- * Randomly pick an FD from the pool.
- */
 int
 ap_fd_random(void)
 {
 
-	if (argpool.fdcnt == 0)
-		return (-1);
-	return (argpool.fds[arc4random() % argpool.fdcnt]);
+	return (descpool_select(&fds));
+}
+
+void
+ap_dirfd_add(int fd)
+{
+
+	descpool_add(&dirfds, fd);
+}
+
+void
+ap_dirfd_close(int fd)
+{
+
+	descpool_release(&dirfds, fd);
+}
+
+int
+ap_dirfd_random(void)
+{
+
+	return (descpool_select(&dirfds));
 }
 
 /*
@@ -301,7 +286,10 @@ void
 ap_init(void)
 {
 
-	memblk_init();
-	fd_init();
+	(void)rman_init(&memblks, getpagesize(), memblk_init);
+	(void)rman_init(&unmapped, getpagesize(), NULL);
+
+	(void)rman_init(&dirfds, 1, NULL);
+	(void)rman_init(&fds, 1, NULL);
 	hier_init(param_string("hier-root"), param_number("hier-depth"));
 }

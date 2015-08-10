@@ -27,7 +27,7 @@
 #include <sys/param.h>
 #include <sys/mman.h>
 
-#include <err.h>
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -35,6 +35,7 @@
 #include "argpool.h"
 #include "params.h"
 #include "syscall.h"
+#include "util.h"
 
 /*
  * System call definitions for mmap(2) and friends.
@@ -116,7 +117,7 @@ mmap_fixup(u_long *args)
 	struct arg_memblk memblk;
 	uint64_t fsize;
 
-	if (arc4random() % 2 == 0 && ap_memblk_reclaim(&memblk) == 0) {
+	if (random() % 2 == 0 && ap_memblk_reclaim(&memblk) == 0) {
 		/* Try to remap a previously unmapped block. */
 		args[0] = (u_long)(uintptr_t)memblk.addr;
 		args[1] = memblk.len;
@@ -126,11 +127,10 @@ mmap_fixup(u_long *args)
 	} else {
 		fsize = param_number("hier-max-fsize");
 		args[0] = 0;
-		args[1] = arc4random() % fsize;
+		args[1] = random() % fsize;
 		args[3] = MAP_PRIVATE;
-		args[5] = arc4random() % fsize;
+		args[5] = random() % fsize;
 	}
-
 	args[3] &= ~(MAP_ALIGNED_SUPER | MAP_STACK | MAP_HASSEMAPHORE); /* XXX why? */
 }
 
@@ -154,8 +154,7 @@ mmap_cleanup(u_long *args, u_long ret)
 			(void)munmap(addr, (size_t)args[1]);
 		}
 	} else if (addr != NULL)
-		/* XXX we must add this to the memblk pool. */
-		(void)munmap(addr, (size_t)args[1]);
+		ap_memblk_add(addr, args[1]);
 }
 
 static int madvise_cmds[] = {
@@ -226,9 +225,7 @@ mincore_fixup(u_long *args)
 	void *vec;
 
 	/* XXX this may map memory. */
-	vec = malloc(args[1] / getpagesize());
-	if (vec == NULL)
-		err(1, "malloc");
+	vec = xmalloc(args[1] / getpagesize());
 	args[2] = (uintptr_t)vec;
 }
 
@@ -390,7 +387,7 @@ munmap_cleanup(u_long *args, u_long ret)
 	/* Inform the argpool layer that we've unmapped this block. */
 	memblk.addr = (void *)(uintptr_t)args[0];
 	memblk.len = args[1];
-	(void)ap_memblk_unmap(&memblk);
+	ap_memblk_unmap(&memblk);
 }
 
 static int mlockall_flags[] = {

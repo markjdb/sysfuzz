@@ -27,9 +27,13 @@
 #ifndef _UTIL_H_
 #define	_UTIL_H_
 
+#define	max(x, y)	((x) > (y) ? (x) : (y))
+#define	min(x, y)	((x) > (y) ? (y) : (x))
+
 u_int	ncpu(void);
 u_int	pagecnt(void);
 void	randfile(char *);
+void *	xmalloc(size_t);
 char *	xstrdup(const char *);
 
 #endif

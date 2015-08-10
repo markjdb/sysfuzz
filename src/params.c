@@ -219,7 +219,7 @@ init_defaults()
 		.name = "memblk-max-size",
 		.descr = "The maximum number of pages in a memblk.",
 		.type = NV_TYPE_NUMBER,
-		.number = 1024,
+		.number = 16 * 1024,
 	},
 	{
 		.name = "num-fuzzers",

@@ -2,11 +2,14 @@ PROG=	sysfuzz
 SRCS=	argpool.c \
 	fork.c \
 	params.c \
+	rman.c \
 	sched.c \
 	syscall.c \
 	sysfuzz.c \
 	util.c \
 	vm.c
+
+CFLAGS+= -DINVARIANTS
 
 BINDIR=/usr/local/bin
 

@@ -23,8 +23,7 @@ Some example usages are:
 
 $ sysfuzz
 
-  Run the fuzzer with default parameters. All implemented syscalls will be
-  fuzzed.
+  Run the fuzzer with default parameters. All supported syscalls will be fuzzed.
 
 $ sysfuzz -g vm
 
@@ -32,11 +31,11 @@ $ sysfuzz -g vm
 
 $ sysfuzz -l vm
 
-  List the system calls in the "vm" system call group.
+  List the system calls comprising the "vm" system call group.
 
 $ sysfuzz -d
 
-  Print descriptions and default values of all tunable run-time parameters.
+  Print descriptions and default values of all run-time parameters.
 
 $ sysfuzz -c mmap,munmap -x num-fuzzers=1
 
@@ -63,5 +62,11 @@ https://svnweb.freebsd.org/base?view=revision&revision=271716
 
 r274482:
 https://svnweb.freebsd.org/base?view=revision&revision=274482
+
+-=-=-=-=-=-=-=
+
+TODO:
+* support errno validation (e.g. based on man page descriptions)
+* track per-syscall statistics
 
 -=-=-=-=-=-=-=

@@ -77,11 +77,22 @@ pagecnt()
 	return (pgcnt);
 }
 
+void *
+xmalloc(size_t sz)
+{
+	void *ret;
+
+	if ((ret = malloc(sz)) == NULL)
+		err(1, "malloc(%zu)", sz);
+	return (ret);
+}
+
 char *
 xstrdup(const char *str)
 {
-	char *ret = strdup(str);
-	if (ret == NULL)
+	char *ret;
+
+	if ((ret = strdup(str)) == NULL)
 		err(1, "strdup");
 	return (ret);
 }
