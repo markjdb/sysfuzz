@@ -32,6 +32,7 @@
 #include <assert.h>
 #include <err.h>
 #include <fcntl.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -44,7 +45,6 @@
 static struct rman dirfds;
 static struct rman fds;
 static struct rman memblks;
-static struct rman unmapped;
 
 static void	hier_init(const char *, int);
 static void	hier_extend(int, int);
@@ -75,13 +75,13 @@ memblk_init(struct rman *rman __unused)
 		if (random() % 2 == 0)
 			memset(addr, 0, len);
 
-		ap_memblk_add(addr, len);
+		ap_memblk_map(addr, len);
 	}
 	return (0);
 }
 
 void
-ap_memblk_add(void *addr, size_t len)
+ap_memblk_map(void *addr, size_t len)
 {
 
 	rman_add(&memblks, (uintptr_t)addr, len);
@@ -102,30 +102,11 @@ ap_memblk_random(struct arg_memblk *memblk)
 	return (0);
 }
 
-/*
- * Add a record indicating that the specified block has been unmapped.
- */
 void
-ap_memblk_unmap(const struct arg_memblk *memblk)
+ap_memblk_unmap(void *addr, size_t len)
 {
 
-	rman_release(&memblks, (uintptr_t)memblk->addr, memblk->len);
-	rman_add(&unmapped, (uintptr_t)memblk->addr, memblk->len);
-}
-
-/*
- * Attempt to obtain a memblk that has been recorded as unmapped.
- */
-int
-ap_memblk_reclaim(struct arg_memblk *memblk)
-{
-	u_long start, len;
-
-	if (rman_select(&unmapped, &start, &len, 0))
-		return (1);
-	memblk->addr = (void *)(uintptr_t)start;
-	memblk->len = len;
-	return (0);
+	rman_release(&memblks, (u_long)(uintptr_t)addr, len);
 }
 
 /*
@@ -287,7 +268,6 @@ ap_init(void)
 {
 
 	(void)rman_init(&memblks, getpagesize(), memblk_init);
-	(void)rman_init(&unmapped, getpagesize(), NULL);
 
 	(void)rman_init(&dirfds, 1, NULL);
 	(void)rman_init(&fds, 1, NULL);

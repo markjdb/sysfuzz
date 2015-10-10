@@ -28,6 +28,7 @@
 #include <sys/mman.h>
 
 #include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -114,19 +115,17 @@ SYSCALL_ADD(mmap_desc);
 void
 mmap_fixup(u_long *args)
 {
-	struct arg_memblk memblk;
 	uint64_t fsize;
 
-	if (random() % 2 == 0 && ap_memblk_reclaim(&memblk) == 0) {
-		/* Try to remap a previously unmapped block. */
-		args[0] = (u_long)(uintptr_t)memblk.addr;
-		args[1] = memblk.len;
+	if (random() % 2 == 0) {
+		args[0] = (u_long)NULL;
+		args[1] = (random() % param_number("memblk-max-size")) + 1;
 		args[3] |= MAP_ANON;
 		args[4] = (u_long)-1;
 		args[5] = 0;
 	} else {
 		fsize = param_number("hier-max-fsize");
-		args[0] = 0;
+		args[0] = (u_long)NULL;
 		args[1] = random() % fsize;
 		args[3] = MAP_PRIVATE;
 		args[5] = random() % fsize;
@@ -137,24 +136,15 @@ mmap_fixup(u_long *args)
 void
 mmap_cleanup(u_long *args, u_long ret)
 {
-	struct arg_memblk memblk;
 	void *addr;
 
 	addr = (void *)(uintptr_t)ret;
-	if (args[4] == (u_long)-1) {
-		if (addr == NULL) {
-			memblk.addr = addr;
-			memblk.len = args[1];
-			ap_memblk_unmap(&memblk);
-		} else if (addr != (void *)(uintptr_t)args[0]) {
-			/*
-			 * If we didn't get memory at the location requested,
-			 * free it.
-			 */
-			(void)munmap(addr, (size_t)args[1]);
-		}
-	} else if (addr != NULL)
-		ap_memblk_add(addr, args[1]);
+	assert(addr != NULL);
+	if (addr == MAP_FAILED)
+		/* The map request failed. */
+		return;
+
+	ap_memblk_map(addr, args[1]);
 }
 
 static int madvise_cmds[] = {
@@ -224,7 +214,6 @@ mincore_fixup(u_long *args)
 {
 	void *vec;
 
-	/* XXX this may map memory. */
 	vec = xmalloc(args[1] / getpagesize());
 	args[2] = (uintptr_t)vec;
 }
@@ -378,16 +367,12 @@ SYSCALL_ADD(munmap_desc);
 void
 munmap_cleanup(u_long *args, u_long ret)
 {
-	struct arg_memblk memblk;
 
 	if (ret != 0)
-		/* The unmap wasn't successful. */
+		/* The unmap was unsuccessful. */
 		return;
 
-	/* Inform the argpool layer that we've unmapped this block. */
-	memblk.addr = (void *)(uintptr_t)args[0];
-	memblk.len = args[1];
-	ap_memblk_unmap(&memblk);
+	ap_memblk_unmap((void *)args[0], args[1]);
 }
 
 static int mlockall_flags[] = {
