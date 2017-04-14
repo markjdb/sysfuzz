@@ -229,6 +229,7 @@ static int minherit_cmds[] = {
 	INHERIT_SHARE,
 	INHERIT_NONE,
 	INHERIT_COPY,
+	INHERIT_ZERO,
 };
 
 static struct scdesc minherit_desc = {
