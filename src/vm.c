@@ -56,7 +56,9 @@ static int mmap_prot_flags[] = {
 };
 
 static int mmap_flags[] = {
+#ifdef __LP64__
 	MAP_32BIT,
+#endif
 	MAP_ALIGNED_SUPER,
 	MAP_ANON,
 	MAP_FIXED,
